@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,6 +29,16 @@ public class TestController {
         response.put("status", "UP");
         response.put("timestamp", LocalDateTime.now());
         response.put("service", "ParqueoApp Backend");
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/time")
+    public ResponseEntity<Map<String, Object>> getServerTime() {
+        Map<String, Object> response = new HashMap<>();
+        LocalDateTime now = LocalDateTime.now();
+        response.put("serverTime", now);
+        response.put("serverTimeZone", ZoneId.systemDefault().getId());
+        response.put("formattedTime", now.toString());
         return ResponseEntity.ok(response);
     }
 } 
