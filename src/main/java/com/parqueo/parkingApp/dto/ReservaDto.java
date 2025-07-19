@@ -1,7 +1,6 @@
 package com.parqueo.parkingApp.dto;
 
 import com.parqueo.parkingApp.model.Reserva.EstadoReserva;
-import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
@@ -25,11 +24,9 @@ public class ReservaDto {
     private Long espacioId;
 
     @NotNull(message = "La fecha de inicio es obligatoria")
-    @Future(message = "La fecha de inicio debe estar en el futuro")
     private LocalDateTime fechaHoraInicio;
 
     @NotNull(message = "La fecha de fin es obligatoria")
-    @Future(message = "La fecha de fin debe estar en el futuro")
     private LocalDateTime fechaHoraFin;
 
     @NotNull(message = "El estado es obligatorio")
