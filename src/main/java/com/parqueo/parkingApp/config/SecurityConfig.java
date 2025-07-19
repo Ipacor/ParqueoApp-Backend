@@ -26,6 +26,8 @@ public class SecurityConfig {
         http
             .csrf().disable()
             .authorizeHttpRequests()
+                // Endpoints públicos para pruebas
+                .requestMatchers("/", "/health", "/api/test").permitAll()
                 // Permitir acceso público al login
                 .requestMatchers("/api/usuarios/login").permitAll()
                 // Vehículos
