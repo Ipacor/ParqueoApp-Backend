@@ -281,12 +281,12 @@ public class ReservaServiceImpl implements ReservaService {
             throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de fin");
         }
         
-        // Permitir reservas hasta 5 minutos en el pasado para compensar diferencias de zona horaria
+        // Permitir reservas hasta 30 minutos en el pasado para compensar diferencias de zona horaria
         LocalDateTime ahora = LocalDateTime.now();
-        LocalDateTime limitePasado = ahora.minusMinutes(5);
+        LocalDateTime limitePasado = ahora.minusMinutes(30);
         
         if (fechaInicio.isBefore(limitePasado)) {
-            throw new IllegalArgumentException("La fecha de inicio debe estar en el futuro (máximo 5 minutos en el pasado permitido)");
+            throw new IllegalArgumentException("La fecha de inicio debe estar en el futuro (máximo 30 minutos en el pasado permitido)");
         }
     }
 }
