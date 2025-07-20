@@ -1,5 +1,6 @@
 package com.parqueo.parkingApp.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.parqueo.parkingApp.model.Reserva.EstadoReserva;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -24,9 +25,11 @@ public class ReservaDto {
     private Long espacioId;
 
     @NotNull(message = "La fecha de inicio es obligatoria")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "America/Lima")
     private LocalDateTime fechaHoraInicio;
 
     @NotNull(message = "La fecha de fin es obligatoria")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "America/Lima")
     private LocalDateTime fechaHoraFin;
 
     @NotNull(message = "El estado es obligatorio")

@@ -1,10 +1,13 @@
 package com.parqueo.parkingApp.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.parqueo.parkingApp.model.Vehiculo;
 import com.parqueo.parkingApp.model.Vehiculo.TipoVehiculo;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -34,5 +37,6 @@ public class VehiculoDto {
 
     private Boolean activo;
 
-    private java.time.LocalDateTime fechaRegistro;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "America/Lima")
+    private LocalDateTime fechaRegistro;
 }

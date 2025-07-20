@@ -1,5 +1,6 @@
 package com.parqueo.parkingApp.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.parqueo.parkingApp.model.Sancion.EstadoSancion;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -26,16 +27,24 @@ public class SancionDto {
     private EstadoSancion estado;
 
     @NotNull(message = "La fecha de registro es obligatoria")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "America/Lima")
     private LocalDateTime registroSancion;
 
     private String observaciones;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "America/Lima")
     private LocalDateTime fechaResolucion;
+    
     private String registradaPorNombre;
 
     // Nuevo campo para el id de la regla infringida
     private Long reglaId;
 
     private String tipoCastigo;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "America/Lima")
     private LocalDateTime fechaInicioSuspension;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "America/Lima")
     private LocalDateTime fechaFinSuspension;
 }
