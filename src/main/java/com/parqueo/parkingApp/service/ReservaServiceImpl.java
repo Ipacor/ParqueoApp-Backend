@@ -79,8 +79,9 @@ public class ReservaServiceImpl implements ReservaService {
         escaneoQR.setReserva(guardada);
         escaneoQR.setToken(UUID.randomUUID().toString());
         escaneoQR.setTipo("ENTRADA");
-        escaneoQR.setFechaExpiracion(dto.getFechaHoraInicio().plusMinutes(20));
-        escaneoQR.setFechaInicioValidez(dto.getFechaHoraInicio().minusMinutes(20));
+        // Extender la validez del QR: 1 hora antes y 2 horas después del inicio
+        escaneoQR.setFechaExpiracion(dto.getFechaHoraInicio().plusHours(2));
+        escaneoQR.setFechaInicioValidez(dto.getFechaHoraInicio().minusHours(1));
         escaneoQRRepo.save(escaneoQR);
         // Registrar evento de creación de reserva
         historialUsoService.registrarEvento(usuario, espacio, guardada, vehiculo, HistorialUso.AccionHistorial.RESERVA);
