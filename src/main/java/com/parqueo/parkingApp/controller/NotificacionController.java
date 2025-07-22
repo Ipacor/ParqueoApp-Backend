@@ -2,6 +2,8 @@ package com.parqueo.parkingApp.controller;
 
 import com.parqueo.parkingApp.model.Notificacion;
 import com.parqueo.parkingApp.service.NotificacionService;
+import com.parqueo.parkingApp.dto.NotificacionDto;
+import com.parqueo.parkingApp.mapper.NotificacionMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,10 +22,11 @@ public class NotificacionController {
 
     @GetMapping("/usuario/{usuarioId}")
     @PreAuthorize("hasAuthority('NOTIFICACION_LEER')")
-    public ResponseEntity<List<Notificacion>> obtenerNotificacionesUsuario(@PathVariable Long usuarioId) {
+    public ResponseEntity<List<NotificacionDto>> obtenerNotificacionesUsuario(@PathVariable Long usuarioId) {
         try {
             List<Notificacion> notificaciones = service.obtenerNotificacionesUsuario(usuarioId);
-            return ResponseEntity.ok(notificaciones);
+            List<NotificacionDto> dtos = notificaciones.stream().map(NotificacionMapper::toDto).toList();
+            return ResponseEntity.ok(dtos);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
