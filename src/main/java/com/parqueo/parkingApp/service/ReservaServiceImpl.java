@@ -232,16 +232,16 @@ public class ReservaServiceImpl implements ReservaService {
         LocalDateTime ahora = LocalDateTime.now();
         
         // PRIMERA LÓGICA: Verificar reservas que ya pasaron su fechaHoraFin
-        List<Reserva> reservasReservadas = reservaRepo.findByEstado(Reserva.EstadoReserva.RESERVADO);
+        List<Reserva> reservasReservadas = reservaRepo.findByEstadoWithRelations(Reserva.EstadoReserva.RESERVADO);
         System.out.println("Procesando " + reservasReservadas.size() + " reservas en estado RESERVADO");
         
         for (Reserva reserva : reservasReservadas) {
             // Log para todas las reservas
-            System.out.println("=== REVISANDO RESERVA " + reserva.getId() + " ===");
-            System.out.println("Estado actual: " + reserva.getEstado());
-            System.out.println("Fecha fin: " + reserva.getFechaHoraFin());
-            System.out.println("Fecha actual: " + ahora);
-            System.out.println("¿Está expirada? " + (reserva.getFechaHoraFin() != null && reserva.getFechaHoraFin().isBefore(ahora)));
+                System.out.println("=== REVISANDO RESERVA " + reserva.getId() + " ===");
+                System.out.println("Estado actual: " + reserva.getEstado());
+                System.out.println("Fecha fin: " + reserva.getFechaHoraFin());
+                System.out.println("Fecha actual: " + ahora);
+                System.out.println("¿Está expirada? " + (reserva.getFechaHoraFin() != null && reserva.getFechaHoraFin().isBefore(ahora)));
             
             // Verificar si la reserva ha pasado su fecha de fin
             if (reserva.getFechaHoraFin() != null && reserva.getFechaHoraFin().isBefore(ahora)) {

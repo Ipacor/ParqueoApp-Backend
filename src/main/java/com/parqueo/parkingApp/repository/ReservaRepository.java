@@ -17,4 +17,7 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     
     @Query("SELECT r FROM Reserva r WHERE r.estado = :estado AND r.fechaHoraInicio >= :fechaActual")
     List<Reserva> findReservasActivas(@Param("estado") Reserva.EstadoReserva estado, @Param("fechaActual") LocalDateTime fechaActual);
+    
+    @Query("SELECT r FROM Reserva r LEFT JOIN FETCH r.espacio LEFT JOIN FETCH r.usuario LEFT JOIN FETCH r.vehiculo WHERE r.estado = :estado")
+    List<Reserva> findByEstadoWithRelations(@Param("estado") Reserva.EstadoReserva estado);
 }
