@@ -162,6 +162,13 @@ public class ReservaController {
         return ResponseEntity.ok("Expiración forzada ejecutada correctamente");
     }
 
+    @PostMapping("/actualizar-espacios")
+    @PreAuthorize("hasAuthority('RESERVA_LIBERAR_EXPIRADOS')")
+    public ResponseEntity<String> actualizarEspacios() {
+        reservaService.liberarEspaciosReservadosExpirados();
+        return ResponseEntity.ok("Espacios actualizados correctamente");
+    }
+
     @GetMapping("/{id}/completa")
     @PreAuthorize("hasAuthority('RESERVA_VER_COMPLETA')")
     public ResponseEntity<ReservaDto> obtenerReservaCompleta(@PathVariable Long id) {

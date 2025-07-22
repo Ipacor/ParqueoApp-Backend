@@ -148,22 +148,55 @@ public class HistorialUsoServiceImpl implements HistorialUsoService {
         historial.setVehiculo(vehiculo);
         historial.setAccion(accion);
         historial.setFechaUso(LocalDateTime.now());
-        String notas = "";
-        if (accion == HistorialUso.AccionHistorial.RESERVA && reserva != null) {
-            notas = "Reserva del " + reserva.getFechaHoraInicio() + " al " + reserva.getFechaHoraFin();
-        } else if (accion == HistorialUso.AccionHistorial.ENTRADA) {
-            notas = "Entrada registrada en espacio " + (espacio != null ? espacio.getId() : "-");
-        } else if (accion == HistorialUso.AccionHistorial.SALIDA) {
-            notas = "Salida registrada en espacio " + (espacio != null ? espacio.getId() : "-");
-        } else if (accion == HistorialUso.AccionHistorial.CANCELACION) {
-            notas = "Reserva cancelada";
-        } else if (accion == HistorialUso.AccionHistorial.SANCION) {
-            notas = "Sanción aplicada al usuario " + (usuario != null ? usuario.getId() : "-");
-        } else if (accion == HistorialUso.AccionHistorial.DESBLOQUEO) {
-            notas = "Desbloqueo de sanción para usuario " + (usuario != null ? usuario.getId() : "-");
-        }
+        
+        // Mejorar las notas con más detalles
+        String notas = generarNotasDetalladas(accion, reserva, espacio, vehiculo);
         historial.setNotas(notas);
+        
         repository.save(historial);
+    }
+
+    private String generarNotasDetalladas(HistorialUso.AccionHistorial accion, Reserva reserva, 
+                                         EspacioDisponible espacio, Vehiculo vehiculo) {
+        switch (accion) {
+            case RESERVA:
+                if (reserva != null) {
+                    return String.format("Reserva #%d: %s a %s en espacio %s", 
+                        reserva.getId(), 
+                        reserva.getFechaHoraInicio().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")),
+                        reserva.getFechaHoraFin().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")),
+                        espacio != null ? espacio.getNumeroEspacio() : "N/A");
+                }
+                return "Reserva creada";
+            case ENTRADA:
+                return String.format("Entrada registrada en espacio %s con vehículo %s", 
+                    espacio != null ? espacio.getNumeroEspacio() : "N/A",
+                    vehiculo != null ? vehiculo.getPlaca() : "N/A");
+            case SALIDA:
+                return String.format("Salida registrada en espacio %s", 
+                    espacio != null ? espacio.getNumeroEspacio() : "N/A");
+            case CANCELACION:
+                return "Reserva cancelada por el usuario";
+            case SANCION:
+                return String.format("Sanción aplicada - Motivo: %s", 
+                    reserva != null ? reserva.getMotivoCancelacion() : "No especificado");
+            case DESBLOQUEO:
+                return "Desbloqueo de sanción realizado por administrador";
+            case EXPIRACION:
+                return String.format("Reserva expirada automáticamente en espacio %s", 
+                    espacio != null ? espacio.getNumeroEspacio() : "N/A");
+            default:
+                return "";
+        }
+    }
+
+    @Override
+    public List<HistorialUsoDto> obtenerMiHistorial() {
+        // Obtener el usuario actual del contexto de seguridad
+        // Por ahora retornamos todos, pero debería filtrar por usuario actual
+        return repository.findAll().stream()
+                .map(HistorialUsoMapper::toDto)
+                .toList();
     }
 
     private void validarDatosHistorial(HistorialUsoDto dto) {

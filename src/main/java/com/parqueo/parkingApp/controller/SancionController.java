@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.*;
 import com.parqueo.parkingApp.repository.ReglasEstacionamientoRepository;
 import com.parqueo.parkingApp.repository.SancionRepository;
 import com.parqueo.parkingApp.model.ReglasEstacionamiento;
+import com.parqueo.parkingApp.service.NotificacionService;
+import com.parqueo.parkingApp.model.Notificacion;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +39,7 @@ public class SancionController {
     private final UsuarioRepository usuarioRepository;
     private final ReglasEstacionamientoRepository reglasEstacionamientoRepository;
     private final SancionRepository sancionRepository;
+    private final NotificacionService notificacionService;
 
     @GetMapping
     @PreAuthorize("hasAuthority('SANCION_LEER')")
@@ -200,11 +203,17 @@ public class SancionController {
             // Crear el detalle usando el servicio inyectado
             SancionDetalleDto detalleCreado = detalleService.crear(detalleDto);
 
-            // Crear respuesta con ambos datos
-            // Map<String, Object> respuesta = new HashMap<>();
-            // respuesta.put("sancion", sancionCreada);
-            // respuesta.put("detalle", detalleCreado);
-            // return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
+            // Enviar notificación al usuario sancionado
+            Usuario usuarioSancionado = usuarioRepository.findById(usuarioId)
+                    .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+            
+            String tituloNotificacion = "Sanción Aplicada";
+            String mensajeNotificacion = String.format("Se ha aplicado una sanción por: %s. Motivo: %s", 
+                    reglasEstacionamientoRepository.findById(reglaId).map(ReglasEstacionamiento::getDescripcion).orElse("Infracción"),
+                    motivo);
+            
+            notificacionService.crearNotificacion(usuarioSancionado, tituloNotificacion, mensajeNotificacion, Notificacion.TipoNotificacion.SANCION);
+
             return ResponseEntity.status(HttpStatus.CREATED).body(sancionCreada);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

@@ -79,9 +79,9 @@ public class ReservaServiceImpl implements ReservaService {
         escaneoQR.setReserva(guardada);
         escaneoQR.setToken(UUID.randomUUID().toString());
         escaneoQR.setTipo("ENTRADA");
-        // Extender la validez del QR: 1 hora antes y 2 horas después del inicio
-        escaneoQR.setFechaExpiracion(dto.getFechaHoraInicio().plusHours(2));
-        escaneoQR.setFechaInicioValidez(dto.getFechaHoraInicio().minusHours(1));
+        // Extender la validez del QR: 30 minutos antes y 30 minutos después del inicio
+        escaneoQR.setFechaExpiracion(dto.getFechaHoraInicio().plusMinutes(30));
+        escaneoQR.setFechaInicioValidez(dto.getFechaHoraInicio().minusMinutes(30));
         escaneoQRRepo.save(escaneoQR);
         // Registrar evento de creación de reserva
         historialUsoService.registrarEvento(usuario, espacio, guardada, vehiculo, HistorialUso.AccionHistorial.RESERVA);
@@ -225,7 +225,7 @@ public class ReservaServiceImpl implements ReservaService {
     }
 
     // Lógica para liberar espacios cuando el QR de entrada expira o pasan 20 minutos sin escaneo
-    @Scheduled(fixedRate = 60000) // cada 60 segundos
+    @Scheduled(fixedRate = 30000) // cada 30 segundos
     public void liberarEspaciosReservadosExpirados() {
         List<EscaneoQR> escaneos = escaneoQRRepo.findAll();
         LocalDateTime ahora = LocalDateTime.now();
@@ -250,13 +250,12 @@ public class ReservaServiceImpl implements ReservaService {
                 motivo = "QR expirado";
             }
             
-            // Verificar si han pasado 20 minutos desde el inicio de la reserva sin escaneo
-            LocalDateTime tiempoReferencia = escaneo.getFechaInicioValidez() != null ? 
-                escaneo.getFechaInicioValidez() : reserva.getFechaHoraInicio();
+            // Verificar si han pasado 30 minutos desde el inicio de la reserva sin escaneo
+            LocalDateTime tiempoReferencia = reserva.getFechaHoraInicio();
             
-            if (tiempoReferencia != null && tiempoReferencia.plusMinutes(20).isBefore(ahora)) {
+            if (tiempoReferencia != null && tiempoReferencia.plusMinutes(30).isBefore(ahora)) {
                 debeLiberar = true;
-                motivo = "Sin escaneo por 20 minutos";
+                motivo = "Sin escaneo por 30 minutos";
             }
             
             if (debeLiberar) {
@@ -282,6 +281,8 @@ public class ReservaServiceImpl implements ReservaService {
                 
                 // Log para debugging
                 System.out.println("Reserva " + reserva.getId() + " expirada por: " + motivo);
+                System.out.println("Espacio " + espacio.getId() + " liberado - Estado: " + espacio.getEstado());
+                System.out.println("Fecha actual: " + ahora);
             }
         }
     }
@@ -317,6 +318,7 @@ public class ReservaServiceImpl implements ReservaService {
             throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de fin");
         }
         
+
     }
 }
 

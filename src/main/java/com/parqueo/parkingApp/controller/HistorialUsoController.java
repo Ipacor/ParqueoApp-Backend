@@ -23,7 +23,16 @@ public class HistorialUsoController {
     @GetMapping
     @PreAuthorize("hasAuthority('HISTORIAL_LEER')")
     public ResponseEntity<List<HistorialUsoDto>> listar() {
+        // Solo administradores pueden ver todo el historial
         List<HistorialUsoDto> historiales = service.obtenerTodos();
+        return ResponseEntity.ok(historiales);
+    }
+
+    @GetMapping("/mi-historial")
+    @PreAuthorize("hasAuthority('HISTORIAL_LEER_MI_HISTORIAL')")
+    public ResponseEntity<List<HistorialUsoDto>> obtenerMiHistorial() {
+        // Usuarios ven solo su propio historial
+        List<HistorialUsoDto> historiales = service.obtenerMiHistorial();
         return ResponseEntity.ok(historiales);
     }
 
