@@ -229,9 +229,53 @@ public class ReservaServiceImpl implements ReservaService {
     public void liberarEspaciosReservadosExpirados() {
         System.out.println("=== EJECUTANDO JOB DE EXPIRACIÓN - " + LocalDateTime.now() + " ===");
         
-        List<EscaneoQR> escaneos = escaneoQRRepo.findAll();
         LocalDateTime ahora = LocalDateTime.now();
         
+        // PRIMERA LÓGICA: Verificar reservas que ya pasaron su fechaHoraFin
+        List<Reserva> reservasReservadas = reservaRepo.findByEstado(Reserva.EstadoReserva.RESERVADO);
+        System.out.println("Procesando " + reservasReservadas.size() + " reservas en estado RESERVADO");
+        
+        for (Reserva reserva : reservasReservadas) {
+            // Log específico para las reservas problemáticas
+            if (reserva.getId() == 17L || reserva.getId() == 18L) {
+                System.out.println("=== REVISANDO RESERVA " + reserva.getId() + " ===");
+                System.out.println("Estado actual: " + reserva.getEstado());
+                System.out.println("Fecha fin: " + reserva.getFechaHoraFin());
+                System.out.println("Fecha actual: " + ahora);
+                System.out.println("¿Está expirada? " + (reserva.getFechaHoraFin() != null && reserva.getFechaHoraFin().isBefore(ahora)));
+            }
+            
+            // Verificar si la reserva ha pasado su fecha de fin
+            if (reserva.getFechaHoraFin() != null && reserva.getFechaHoraFin().isBefore(ahora)) {
+                // Liberar espacio
+                EspacioDisponible espacio = reserva.getEspacio();
+                if (espacio != null) {
+                    espacio.setEstado(EspacioDisponible.EstadoEspacio.DISPONIBLE);
+                    espacioRepo.save(espacio);
+                }
+                
+                // Cambiar estado de la reserva a EXPIRADO
+                reserva.setEstado(Reserva.EstadoReserva.EXPIRADO);
+                reservaRepo.save(reserva);
+                
+                // Registrar en el historial
+                historialUsoService.registrarEvento(
+                    reserva.getUsuario(), 
+                    espacio, 
+                    reserva, 
+                    reserva.getVehiculo(), 
+                    HistorialUso.AccionHistorial.EXPIRACION
+                );
+                
+                // Log para debugging
+                System.out.println("Reserva " + reserva.getId() + " expirada por fecha de fin: " + reserva.getFechaHoraFin());
+                System.out.println("Espacio " + espacio.getId() + " liberado - Estado: " + espacio.getEstado());
+                System.out.println("Fecha actual: " + ahora);
+            }
+        }
+        
+        // SEGUNDA LÓGICA: Verificar QRs expirados (para reservas que aún no han expirado por fecha)
+        List<EscaneoQR> escaneos = escaneoQRRepo.findAll();
         System.out.println("Procesando " + escaneos.size() + " escaneos QR");
         
         for (EscaneoQR escaneo : escaneos) {
@@ -243,6 +287,11 @@ public class ReservaServiceImpl implements ReservaService {
             Reserva reserva = escaneo.getReserva();
             if (reserva == null || reserva.getEstado() != Reserva.EstadoReserva.RESERVADO) {
                 continue;
+            }
+            
+            // Solo procesar si la reserva no ha expirado por fecha de fin
+            if (reserva.getFechaHoraFin() != null && reserva.getFechaHoraFin().isBefore(ahora)) {
+                continue; // Ya se procesó en la primera lógica
             }
             
             boolean debeLiberar = false;
@@ -290,40 +339,39 @@ public class ReservaServiceImpl implements ReservaService {
             }
         }
         
-        // NUEVA LÓGICA: Verificar reservas que ya pasaron su fechaHoraFin
-        List<Reserva> reservasReservadas = reservaRepo.findByEstado(Reserva.EstadoReserva.RESERVADO);
-        System.out.println("Procesando " + reservasReservadas.size() + " reservas en estado RESERVADO");
+        System.out.println("=== FIN JOB DE EXPIRACIÓN ===");
+    }
+
+    public void forzarExpiracionReserva(Long reservaId) {
+        Reserva reserva = reservaRepo.findById(reservaId)
+            .orElseThrow(() -> new EntityNotFoundException("Reserva no encontrada con ID: " + reservaId));
         
-        for (Reserva reserva : reservasReservadas) {
-            if (reserva.getFechaHoraFin() != null && reserva.getFechaHoraFin().isBefore(ahora)) {
-                // Liberar espacio
-                EspacioDisponible espacio = reserva.getEspacio();
-                if (espacio != null) {
-                    espacio.setEstado(EspacioDisponible.EstadoEspacio.DISPONIBLE);
-                    espacioRepo.save(espacio);
-                }
-                
-                // Cambiar estado de la reserva a EXPIRADO
-                reserva.setEstado(Reserva.EstadoReserva.EXPIRADO);
-                reservaRepo.save(reserva);
-                
-                // Registrar en el historial
-                historialUsoService.registrarEvento(
-                    reserva.getUsuario(), 
-                    espacio, 
-                    reserva, 
-                    reserva.getVehiculo(), 
-                    HistorialUso.AccionHistorial.EXPIRACION
-                );
-                
-                // Log para debugging
-                System.out.println("Reserva " + reserva.getId() + " expirada por fecha de fin: " + reserva.getFechaHoraFin());
-                System.out.println("Espacio " + espacio.getId() + " liberado - Estado: " + espacio.getEstado());
-                System.out.println("Fecha actual: " + ahora);
-            }
+        if (reserva.getEstado() != Reserva.EstadoReserva.RESERVADO) {
+            throw new IllegalStateException("La reserva no está en estado RESERVADO. Estado actual: " + reserva.getEstado());
         }
         
-        System.out.println("=== FIN JOB DE EXPIRACIÓN ===");
+        // Liberar espacio
+        EspacioDisponible espacio = reserva.getEspacio();
+        if (espacio != null) {
+            espacio.setEstado(EspacioDisponible.EstadoEspacio.DISPONIBLE);
+            espacioRepo.save(espacio);
+        }
+        
+        // Cambiar estado de la reserva a EXPIRADO
+        reserva.setEstado(Reserva.EstadoReserva.EXPIRADO);
+        reservaRepo.save(reserva);
+        
+        // Registrar en el historial
+        historialUsoService.registrarEvento(
+            reserva.getUsuario(), 
+            espacio, 
+            reserva, 
+            reserva.getVehiculo(), 
+            HistorialUso.AccionHistorial.EXPIRACION
+        );
+        
+        System.out.println("Reserva " + reservaId + " expirada manualmente");
+        System.out.println("Espacio " + espacio.getId() + " liberado - Estado: " + espacio.getEstado());
     }
 
     private void validarDatosReserva(ReservaDto dto) {

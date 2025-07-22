@@ -18,5 +18,6 @@ public interface ReservaService {
     List<ReservaDto> buscarPorFecha(LocalDateTime fechaInicio, LocalDateTime fechaFin);
     List<ReservaDto> buscarReservasActivas();
     void liberarEspaciosReservadosExpirados();
+    void forzarExpiracionReserva(Long reservaId);
 }
 
