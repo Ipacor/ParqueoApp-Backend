@@ -163,9 +163,8 @@ public class ReservaServiceImpl implements ReservaService {
         if (usuarioId == null) {
             throw new IllegalArgumentException("El ID del usuario no puede ser null");
         }
-        // Excluir reservas expiradas
+        // Incluir todas las reservas del usuario, incluyendo las expiradas
         return reservaRepo.findByUsuarioId(usuarioId).stream()
-                .filter(r -> r.getEstado() != Reserva.EstadoReserva.EXPIRADO)
                 .map(ReservaMapper::toDto)
                 .toList();
     }
@@ -225,28 +224,64 @@ public class ReservaServiceImpl implements ReservaService {
                 .toList();
     }
 
-    // Lógica para liberar espacio si pasan 20 minutos sin escaneo de entrada
+    // Lógica para liberar espacios cuando el QR de entrada expira o pasan 20 minutos sin escaneo
     @Scheduled(fixedRate = 60000) // cada 60 segundos
     public void liberarEspaciosReservadosExpirados() {
         List<EscaneoQR> escaneos = escaneoQRRepo.findAll();
         LocalDateTime ahora = LocalDateTime.now();
+        
         for (EscaneoQR escaneo : escaneos) {
-            if (escaneo.getTimestampEnt() != null) continue; // Ya ingresó
+            // Solo procesar QRs de ENTRADA que no han sido usados
+            if (!"ENTRADA".equals(escaneo.getTipo()) || escaneo.getTimestampEnt() != null) {
+                continue;
+            }
+            
             Reserva reserva = escaneo.getReserva();
-            if (reserva == null) continue;
-            if (reserva.getEstado() != Reserva.EstadoReserva.RESERVADO) continue;
-            LocalDateTime creado = escaneo.getTimestampEnt();
-            if (creado == null) creado = reserva.getFechaHoraInicio();
-            if (creado != null && creado.plusMinutes(20).isBefore(ahora)) {
+            if (reserva == null || reserva.getEstado() != Reserva.EstadoReserva.RESERVADO) {
+                continue;
+            }
+            
+            boolean debeLiberar = false;
+            String motivo = "";
+            
+            // Verificar si el QR ha expirado
+            if (escaneo.getFechaExpiracion() != null && escaneo.getFechaExpiracion().isBefore(ahora)) {
+                debeLiberar = true;
+                motivo = "QR expirado";
+            }
+            
+            // Verificar si han pasado 20 minutos desde el inicio de la reserva sin escaneo
+            LocalDateTime tiempoReferencia = escaneo.getFechaInicioValidez() != null ? 
+                escaneo.getFechaInicioValidez() : reserva.getFechaHoraInicio();
+            
+            if (tiempoReferencia != null && tiempoReferencia.plusMinutes(20).isBefore(ahora)) {
+                debeLiberar = true;
+                motivo = "Sin escaneo por 20 minutos";
+            }
+            
+            if (debeLiberar) {
                 // Liberar espacio
                 EspacioDisponible espacio = reserva.getEspacio();
                 if (espacio != null) {
                     espacio.setEstado(EspacioDisponible.EstadoEspacio.DISPONIBLE);
                     espacioRepo.save(espacio);
                 }
+                
                 // Cambiar estado de la reserva a EXPIRADO
                 reserva.setEstado(Reserva.EstadoReserva.EXPIRADO);
                 reservaRepo.save(reserva);
+                
+                // Registrar en el historial
+                historialUsoService.registrarEvento(
+                    reserva.getUsuario(), 
+                    espacio, 
+                    reserva, 
+                    reserva.getVehiculo(), 
+                    HistorialUso.AccionHistorial.EXPIRACION
+                );
+                
+                // Log para debugging
+                System.out.println("Reserva " + reserva.getId() + " expirada por: " + motivo);
             }
         }
     }
@@ -282,14 +317,6 @@ public class ReservaServiceImpl implements ReservaService {
             throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de fin");
         }
         
-        // Permitir reservas sin restricciones de tiempo (solo validar que fechaFin > fechaInicio)
-        // Comentado temporalmente para permitir reservas inmediatas
-        /*
-        LocalDateTime ahora = LocalDateTime.now();
-        if (fechaInicio.isBefore(ahora.minusHours(1))) {
-            throw new IllegalArgumentException("La fecha de inicio no puede estar más de 1 hora en el pasado");
-        }
-        */
     }
 }
 

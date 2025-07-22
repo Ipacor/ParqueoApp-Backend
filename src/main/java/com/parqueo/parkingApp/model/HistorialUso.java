@@ -55,6 +55,7 @@ public class HistorialUso {
         CANCELACION,
         SANCION,
         DESBLOQUEO,
+        EXPIRACION,
         OTRO
     }
 
