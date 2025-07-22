@@ -236,14 +236,12 @@ public class ReservaServiceImpl implements ReservaService {
         System.out.println("Procesando " + reservasReservadas.size() + " reservas en estado RESERVADO");
         
         for (Reserva reserva : reservasReservadas) {
-            // Log específico para las reservas problemáticas
-            if (reserva.getId() == 17L || reserva.getId() == 18L) {
-                System.out.println("=== REVISANDO RESERVA " + reserva.getId() + " ===");
-                System.out.println("Estado actual: " + reserva.getEstado());
-                System.out.println("Fecha fin: " + reserva.getFechaHoraFin());
-                System.out.println("Fecha actual: " + ahora);
-                System.out.println("¿Está expirada? " + (reserva.getFechaHoraFin() != null && reserva.getFechaHoraFin().isBefore(ahora)));
-            }
+            // Log para todas las reservas
+            System.out.println("=== REVISANDO RESERVA " + reserva.getId() + " ===");
+            System.out.println("Estado actual: " + reserva.getEstado());
+            System.out.println("Fecha fin: " + reserva.getFechaHoraFin());
+            System.out.println("Fecha actual: " + ahora);
+            System.out.println("¿Está expirada? " + (reserva.getFechaHoraFin() != null && reserva.getFechaHoraFin().isBefore(ahora)));
             
             // Verificar si la reserva ha pasado su fecha de fin
             if (reserva.getFechaHoraFin() != null && reserva.getFechaHoraFin().isBefore(ahora)) {
