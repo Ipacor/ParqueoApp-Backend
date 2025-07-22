@@ -14,4 +14,7 @@ public interface SancionRepository extends JpaRepository<Sancion, Long> {
 
     @Query("SELECT s FROM Sancion s LEFT JOIN FETCH s.registradaPor")
     List<Sancion> findAllWithRegistrador();
+    
+    @Query("SELECT COUNT(s) FROM Sancion s LEFT JOIN s.registradaPor")
+    Long countAllWithRegistrador();
 }
