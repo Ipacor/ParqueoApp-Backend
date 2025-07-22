@@ -85,7 +85,9 @@ public class DataLoader implements CommandLineRunner {
             
             // Reglas de Estacionamiento
             "REGLA_LEER", "REGLA_CREAR", "REGLA_EDITAR", "REGLA_ELIMINAR",
-            "REGLA_BUSCAR_POR_TIPO", "REGLA_LISTAR_ACTIVAS", "REGLA_LISTAR_TIPOS_SANCION"
+            "REGLA_BUSCAR_POR_TIPO", "REGLA_LISTAR_ACTIVAS", "REGLA_LISTAR_TIPOS_SANCION",
+            // Notificaciones
+            "NOTIFICACION_LEER"
         }).map(nombre -> {
             Permiso p = new Permiso();
             p.setNombre(nombre);
@@ -116,7 +118,8 @@ public class DataLoader implements CommandLineRunner {
                         p.getNombre().equals("ESPACIO_LISTAR_DISPONIBLES") ||
                         p.getNombre().equals("VALIDACION_LEER_USUARIO") ||
                         p.getNombre().equals("VALIDACION_VALIDAR_QR") ||
-                        p.getNombre().equals("REGLA_LEER"))
+                        p.getNombre().equals("REGLA_LEER") ||
+                        p.getNombre().equals("NOTIFICACION_LEER"))
             .collect(Collectors.toSet());
         estudiante.setPermisos(permisosEstudiante);
         rolRepository.save(estudiante);
@@ -138,7 +141,8 @@ public class DataLoader implements CommandLineRunner {
                         p.getNombre().equals("HISTORIAL_LEER") ||
                         p.getNombre().equals("ESPACIO_LEER") ||
                         p.getNombre().equals("VALIDACION_VALIDAR_QR") ||
-                        p.getNombre().equals("REGLA_LEER"))
+                        p.getNombre().equals("REGLA_LEER") ||
+                        p.getNombre().equals("NOTIFICACION_LEER"))
             .collect(Collectors.toSet());
         vigilante.setPermisos(permisosVigilante);
         rolRepository.save(vigilante);
@@ -151,7 +155,8 @@ public class DataLoader implements CommandLineRunner {
                         p.getNombre().equals("USUARIO_LEER") ||
                         p.getNombre().equals("HISTORIAL_LEER") ||
                         p.getNombre().equals("ESPACIO_LEER") ||
-                        p.getNombre().equals("ESPACIO_LISTAR_DISPONIBLES"))
+                        p.getNombre().equals("ESPACIO_LISTAR_DISPONIBLES") ||
+                        p.getNombre().equals("NOTIFICACION_LEER"))
             .collect(Collectors.toSet());
         proveedorServicio.setPermisos(permisosProveedor);
         rolRepository.save(proveedorServicio);
