@@ -1,27 +1,30 @@
 package com.parqueo.parkingApp.service;
 
-import com.parqueo.parkingApp.dto.ReservaDto;
-import com.parqueo.parkingApp.mapper.ReservaMapper;
-import com.parqueo.parkingApp.model.Reserva;
-import com.parqueo.parkingApp.model.Usuario;
-import com.parqueo.parkingApp.model.Vehiculo;
-import com.parqueo.parkingApp.model.EspacioDisponible;
-import com.parqueo.parkingApp.model.EscaneoQR;
-import com.parqueo.parkingApp.model.HistorialUso;
-import com.parqueo.parkingApp.repository.ReservaRepository;
-import com.parqueo.parkingApp.repository.UsuarioRepository;
-import com.parqueo.parkingApp.repository.VehiculoRepository;
-import com.parqueo.parkingApp.repository.EspacioDisponibleRepository;
-import com.parqueo.parkingApp.repository.EscaneoQRRepository;
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import com.parqueo.parkingApp.dto.ReservaDto;
+import com.parqueo.parkingApp.mapper.ReservaMapper;
+import com.parqueo.parkingApp.model.EscaneoQR;
+import com.parqueo.parkingApp.model.EspacioDisponible;
+import com.parqueo.parkingApp.model.HistorialUso;
+import com.parqueo.parkingApp.model.Notificacion;
+import com.parqueo.parkingApp.model.Reserva;
+import com.parqueo.parkingApp.model.Usuario;
+import com.parqueo.parkingApp.model.Vehiculo;
+import com.parqueo.parkingApp.repository.EscaneoQRRepository;
+import com.parqueo.parkingApp.repository.EspacioDisponibleRepository;
+import com.parqueo.parkingApp.repository.ReservaRepository;
+import com.parqueo.parkingApp.repository.UsuarioRepository;
+import com.parqueo.parkingApp.repository.VehiculoRepository;
+
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +38,9 @@ public class ReservaServiceImpl implements ReservaService {
     private final EscaneoQRRepository escaneoQRRepo;
     @Autowired
     private HistorialUsoService historialUsoService;
+    
+    @Autowired
+    private NotificacionService notificacionService;
 
     @Override
     public List<ReservaDto> obtenerTodos() {
@@ -85,6 +91,17 @@ public class ReservaServiceImpl implements ReservaService {
         escaneoQRRepo.save(escaneoQR);
         // Registrar evento de creación de reserva
         historialUsoService.registrarEvento(usuario, espacio, guardada, vehiculo, HistorialUso.AccionHistorial.RESERVA);
+        
+        // Crear notificación de reserva creada
+        String tituloNotificacion = "Reserva Creada";
+        String mensajeNotificacion = String.format("Tu reserva #%d ha sido creada exitosamente. Espacio: %s, Fecha: %s a %s", 
+                guardada.getId(), 
+                espacio.getNumeroEspacio(),
+                dto.getFechaHoraInicio().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")),
+                dto.getFechaHoraFin().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+        
+        notificacionService.crearNotificacion(usuario, tituloNotificacion, mensajeNotificacion, Notificacion.TipoNotificacion.RESERVA_CREADA);
+        
         return ReservaMapper.toDto(guardada);
     }
 
@@ -123,8 +140,22 @@ public class ReservaServiceImpl implements ReservaService {
         if (original.getEstado() != dto.getEstado()) {
             if (dto.getEstado() == Reserva.EstadoReserva.ACTIVO) {
                 historialUsoService.registrarEvento(usuario, espacio, actualizada, vehiculo, HistorialUso.AccionHistorial.ENTRADA);
+                
+                // Crear notificación de entrada registrada
+                String tituloEntrada = "Entrada Registrada";
+                String mensajeEntrada = String.format("Has ingresado al espacio %s. Tu reserva #%d está ahora activa.", 
+                        espacio.getNumeroEspacio(), actualizada.getId());
+                notificacionService.crearNotificacion(usuario, tituloEntrada, mensajeEntrada, Notificacion.TipoNotificacion.ENTRADA_REGISTRADA);
+                
             } else if (dto.getEstado() == Reserva.EstadoReserva.FINALIZADO) {
                 historialUsoService.registrarEvento(usuario, espacio, actualizada, vehiculo, HistorialUso.AccionHistorial.SALIDA);
+                
+                // Crear notificación de salida registrada
+                String tituloSalida = "Salida Registrada";
+                String mensajeSalida = String.format("Has salido del espacio %s. Tu reserva #%d ha finalizado.", 
+                        espacio.getNumeroEspacio(), actualizada.getId());
+                notificacionService.crearNotificacion(usuario, tituloSalida, mensajeSalida, Notificacion.TipoNotificacion.SALIDA_REGISTRADA);
+                
             } else if (dto.getEstado() == Reserva.EstadoReserva.CANCELADO) {
                 historialUsoService.registrarEvento(usuario, espacio, actualizada, vehiculo, HistorialUso.AccionHistorial.CANCELACION);
             }
@@ -265,6 +296,14 @@ public class ReservaServiceImpl implements ReservaService {
                     HistorialUso.AccionHistorial.EXPIRACION
                 );
                 
+                // Crear notificación de reserva expirada
+                String tituloNotificacion = "Reserva Expirada";
+                String mensajeNotificacion = String.format("Tu reserva #%d ha expirado automáticamente. El espacio %s ya no está reservado para ti.", 
+                        reserva.getId(), 
+                        espacio.getNumeroEspacio());
+                
+                notificacionService.crearNotificacion(reserva.getUsuario(), tituloNotificacion, mensajeNotificacion, Notificacion.TipoNotificacion.RESERVA_EXPIRADA);
+                
                 // Log para debugging
                 System.out.println("Reserva " + reserva.getId() + " expirada por fecha de fin: " + reserva.getFechaHoraFin());
                 System.out.println("Espacio " + espacio.getId() + " liberado - Estado: " + espacio.getEstado());
@@ -330,6 +369,15 @@ public class ReservaServiceImpl implements ReservaService {
                     HistorialUso.AccionHistorial.EXPIRACION
                 );
                 
+                // Crear notificación de reserva expirada
+                String tituloNotificacion = "Reserva Expirada";
+                String mensajeNotificacion = String.format("Tu reserva #%d ha expirado por: %s. El espacio %s ya no está reservado para ti.", 
+                        reserva.getId(), 
+                        motivo,
+                        espacio.getNumeroEspacio());
+                
+                notificacionService.crearNotificacion(reserva.getUsuario(), tituloNotificacion, mensajeNotificacion, Notificacion.TipoNotificacion.RESERVA_EXPIRADA);
+                
                 // Log para debugging
                 System.out.println("Reserva " + reserva.getId() + " expirada por: " + motivo);
                 System.out.println("Espacio " + espacio.getId() + " liberado - Estado: " + espacio.getEstado());
@@ -367,6 +415,14 @@ public class ReservaServiceImpl implements ReservaService {
             reserva.getVehiculo(), 
             HistorialUso.AccionHistorial.EXPIRACION
         );
+        
+        // Crear notificación de reserva expirada manualmente
+        String tituloNotificacion = "Reserva Expirada";
+        String mensajeNotificacion = String.format("Tu reserva #%d ha sido expirada manualmente por un administrador. El espacio %s ya no está reservado para ti.", 
+                reservaId, 
+                espacio.getNumeroEspacio());
+        
+        notificacionService.crearNotificacion(reserva.getUsuario(), tituloNotificacion, mensajeNotificacion, Notificacion.TipoNotificacion.RESERVA_EXPIRADA);
         
         System.out.println("Reserva " + reservaId + " expirada manualmente");
         System.out.println("Espacio " + espacio.getId() + " liberado - Estado: " + espacio.getEstado());

@@ -1,6 +1,8 @@
 package com.parqueo.parkingApp.controller;
 
 import com.parqueo.parkingApp.model.Notificacion;
+import com.parqueo.parkingApp.model.Usuario;
+import com.parqueo.parkingApp.repository.UsuarioRepository;
 import com.parqueo.parkingApp.service.NotificacionService;
 import com.parqueo.parkingApp.dto.NotificacionDto;
 import com.parqueo.parkingApp.mapper.NotificacionMapper;
@@ -12,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/notificaciones")
@@ -19,6 +22,7 @@ import java.util.List;
 public class NotificacionController {
 
     private final NotificacionService service;
+    private final UsuarioRepository usuarioRepository;
 
     @GetMapping("/usuario/{usuarioId}")
     @PreAuthorize("hasAuthority('NOTIFICACION_LEER')")
@@ -101,6 +105,32 @@ public class NotificacionController {
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    @PostMapping("/sistema/{usuarioId}")
+    @PreAuthorize("hasAuthority('NOTIFICACION_CREAR')")
+    public ResponseEntity<?> enviarNotificacionSistema(
+            @PathVariable Long usuarioId,
+            @RequestBody Map<String, String> request) {
+        try {
+            String titulo = request.get("titulo");
+            String mensaje = request.get("mensaje");
+            
+            if (titulo == null || mensaje == null) {
+                return ResponseEntity.badRequest().body("Título y mensaje son obligatorios");
+            }
+            
+            Usuario usuario = usuarioRepository.findById(usuarioId)
+                    .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+            
+            service.crearNotificacion(usuario, titulo, mensaje, Notificacion.TipoNotificacion.SISTEMA);
+            
+            return ResponseEntity.ok().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor: " + e.getMessage());
         }
     }
 } 

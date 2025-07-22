@@ -316,4 +316,37 @@ public class SancionController {
             return ResponseEntity.badRequest().build();
         }
     }
+    
+    @PutMapping("/{id}/desbloquear")
+    @PreAuthorize("hasAuthority('SANCION_EDITAR')")
+    public ResponseEntity<?> desbloquearSancion(@PathVariable Long id, Authentication authentication) {
+        try {
+            // Obtener la sanción
+            SancionDto sancion = service.obtenerPorId(id);
+            if (sancion == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Cambiar estado a RESUELTA
+            sancion.setEstado(Sancion.EstadoSancion.RESUELTA);
+            SancionDto actualizada = service.actualizar(id, sancion);
+            
+            // Obtener el usuario sancionado
+            Usuario usuarioSancionado = usuarioRepository.findById(sancion.getUsuarioId())
+                    .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+            
+            // Crear notificación de desbloqueo
+            String tituloNotificacion = "Sanción Desbloqueada";
+            String mensajeNotificacion = String.format("Tu sanción #%d ha sido desbloqueada por un administrador. Ya puedes volver a usar el sistema.", 
+                    sancion.getId());
+            
+            notificacionService.crearNotificacion(usuarioSancionado, tituloNotificacion, mensajeNotificacion, Notificacion.TipoNotificacion.DESBLOQUEO);
+            
+            return ResponseEntity.ok(actualizada);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor: " + e.getMessage());
+        }
+    }
 }
