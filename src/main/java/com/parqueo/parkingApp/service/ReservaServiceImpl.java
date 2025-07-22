@@ -227,8 +227,12 @@ public class ReservaServiceImpl implements ReservaService {
     // Lógica para liberar espacios cuando el QR de entrada expira o pasan 20 minutos sin escaneo
     @Scheduled(fixedRate = 30000) // cada 30 segundos
     public void liberarEspaciosReservadosExpirados() {
+        System.out.println("=== EJECUTANDO JOB DE EXPIRACIÓN - " + LocalDateTime.now() + " ===");
+        
         List<EscaneoQR> escaneos = escaneoQRRepo.findAll();
         LocalDateTime ahora = LocalDateTime.now();
+        
+        System.out.println("Procesando " + escaneos.size() + " escaneos QR");
         
         for (EscaneoQR escaneo : escaneos) {
             // Solo procesar QRs de ENTRADA que no han sido usados
@@ -285,6 +289,41 @@ public class ReservaServiceImpl implements ReservaService {
                 System.out.println("Fecha actual: " + ahora);
             }
         }
+        
+        // NUEVA LÓGICA: Verificar reservas que ya pasaron su fechaHoraFin
+        List<Reserva> reservasReservadas = reservaRepo.findByEstado(Reserva.EstadoReserva.RESERVADO);
+        System.out.println("Procesando " + reservasReservadas.size() + " reservas en estado RESERVADO");
+        
+        for (Reserva reserva : reservasReservadas) {
+            if (reserva.getFechaHoraFin() != null && reserva.getFechaHoraFin().isBefore(ahora)) {
+                // Liberar espacio
+                EspacioDisponible espacio = reserva.getEspacio();
+                if (espacio != null) {
+                    espacio.setEstado(EspacioDisponible.EstadoEspacio.DISPONIBLE);
+                    espacioRepo.save(espacio);
+                }
+                
+                // Cambiar estado de la reserva a EXPIRADO
+                reserva.setEstado(Reserva.EstadoReserva.EXPIRADO);
+                reservaRepo.save(reserva);
+                
+                // Registrar en el historial
+                historialUsoService.registrarEvento(
+                    reserva.getUsuario(), 
+                    espacio, 
+                    reserva, 
+                    reserva.getVehiculo(), 
+                    HistorialUso.AccionHistorial.EXPIRACION
+                );
+                
+                // Log para debugging
+                System.out.println("Reserva " + reserva.getId() + " expirada por fecha de fin: " + reserva.getFechaHoraFin());
+                System.out.println("Espacio " + espacio.getId() + " liberado - Estado: " + espacio.getEstado());
+                System.out.println("Fecha actual: " + ahora);
+            }
+        }
+        
+        System.out.println("=== FIN JOB DE EXPIRACIÓN ===");
     }
 
     private void validarDatosReserva(ReservaDto dto) {
@@ -318,7 +357,14 @@ public class ReservaServiceImpl implements ReservaService {
             throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de fin");
         }
         
-
+        // Permitir reservas sin restricciones de tiempo (solo validar que fechaFin > fechaInicio)
+        // Comentado temporalmente para permitir reservas inmediatas
+        /*
+        LocalDateTime ahora = LocalDateTime.now();
+        if (fechaInicio.isBefore(ahora.minusHours(1))) {
+            throw new IllegalArgumentException("La fecha de inicio no puede estar más de 1 hora en el pasado");
+        }
+        */
     }
 }
 
