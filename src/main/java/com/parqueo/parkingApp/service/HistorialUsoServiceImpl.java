@@ -11,6 +11,8 @@ import com.parqueo.parkingApp.repository.HistorialUsoRepository;
 import com.parqueo.parkingApp.service.HistorialUsoService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -193,8 +195,17 @@ public class HistorialUsoServiceImpl implements HistorialUsoService {
     @Override
     public List<HistorialUsoDto> obtenerMiHistorial() {
         // Obtener el usuario actual del contexto de seguridad
-        // Por ahora retornamos todos, pero debería filtrar por usuario actual
-        return repository.findAll().stream()
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getPrincipal() == null) {
+            // Si no hay usuario autenticado, retornar todos los historiales
+            return repository.findAll().stream()
+                    .map(HistorialUsoMapper::toDto)
+                    .toList();
+        }
+
+        // Si hay usuario autenticado, filtrar por el ID del usuario
+        Long usuarioId = ((Usuario) authentication.getPrincipal()).getId();
+        return repository.findByUsuarioId(usuarioId).stream()
                 .map(HistorialUsoMapper::toDto)
                 .toList();
     }
