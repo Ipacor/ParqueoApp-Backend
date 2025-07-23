@@ -1,22 +1,25 @@
 package com.parqueo.parkingApp.service;
 
-import com.parqueo.parkingApp.dto.HistorialUsoDto;
-import com.parqueo.parkingApp.mapper.HistorialUsoMapper;
-import com.parqueo.parkingApp.model.HistorialUso;
-import com.parqueo.parkingApp.model.Usuario;
-import com.parqueo.parkingApp.model.EspacioDisponible;
-import com.parqueo.parkingApp.model.Reserva;
-import com.parqueo.parkingApp.model.Vehiculo;
-import com.parqueo.parkingApp.repository.HistorialUsoRepository;
-import com.parqueo.parkingApp.repository.UsuarioRepository;
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import com.parqueo.parkingApp.dto.HistorialUsoDto;
+import com.parqueo.parkingApp.mapper.HistorialUsoMapper;
+import com.parqueo.parkingApp.model.EspacioDisponible;
+import com.parqueo.parkingApp.model.HistorialUso;
+import com.parqueo.parkingApp.model.Reserva;
+import com.parqueo.parkingApp.model.Usuario;
+import com.parqueo.parkingApp.model.Vehiculo;
+import com.parqueo.parkingApp.repository.HistorialUsoRepository;
+import com.parqueo.parkingApp.repository.UsuarioRepository;
+
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -208,6 +211,7 @@ public class HistorialUsoServiceImpl implements HistorialUsoService {
     }
 
     @Override
+    @Transactional
     public void eliminarPorReserva(Long reservaId) {
         if (reservaId == null) {
             throw new IllegalArgumentException("El ID de la reserva no puede ser null");

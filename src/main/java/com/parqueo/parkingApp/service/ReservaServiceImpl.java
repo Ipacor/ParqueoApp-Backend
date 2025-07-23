@@ -175,6 +175,7 @@ public class ReservaServiceImpl implements ReservaService {
     }
 
     @Override
+    @Transactional
     public void eliminar(Long id) {
         System.out.println("=== ELIMINANDO RESERVA #" + id + " ===");
         if (id == null) {
@@ -182,8 +183,8 @@ public class ReservaServiceImpl implements ReservaService {
         }
         
         try {
-            Reserva reserva = reservaRepo.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Reserva no encontrada con ID: " + id));
+        Reserva reserva = reservaRepo.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Reserva no encontrada con ID: " + id));
             System.out.println("Reserva encontrada: " + reserva.getId());
             
             // Eliminar registros de historial asociados primero
@@ -196,17 +197,17 @@ public class ReservaServiceImpl implements ReservaService {
             escaneoQRRepo.deleteByReservaId(id);
             System.out.println("Escaneos QR eliminados");
             
-            EspacioDisponible espacio = reserva.getEspacio();
-            if (espacio != null) {
+        EspacioDisponible espacio = reserva.getEspacio();
+        if (espacio != null) {
                 System.out.println("Liberando espacio: " + espacio.getNumeroEspacio());
-                espacio.setEstado(EspacioDisponible.EstadoEspacio.DISPONIBLE);
-                espacioRepo.save(espacio);
+            espacio.setEstado(EspacioDisponible.EstadoEspacio.DISPONIBLE);
+            espacioRepo.save(espacio);
                 System.out.println("Espacio liberado correctamente");
             } else {
                 System.out.println("No se encontró espacio asociado a la reserva");
             }
             
-            reservaRepo.deleteById(id);
+        reservaRepo.deleteById(id);
             System.out.println("Reserva eliminada correctamente");
         } catch (Exception e) {
             System.out.println("ERROR eliminando reserva: " + e.getMessage());
