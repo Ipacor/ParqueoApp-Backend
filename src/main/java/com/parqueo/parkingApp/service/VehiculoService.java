@@ -18,5 +18,6 @@ public interface VehiculoService {
     // Nuevos métodos para manejar vehículos activos/inactivos
     List<VehiculoDto> obtenerSoloActivos();
     List<VehiculoDto> obtenerTodosIncluyendoInactivos();
+    List<VehiculoDto> buscarTodosPorUsuario(Long usuarioId);
 }
 

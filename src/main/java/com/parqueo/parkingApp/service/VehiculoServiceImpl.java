@@ -130,6 +130,20 @@ public class VehiculoServiceImpl implements VehiculoService {
                 .toList();
     }
 
+    /**
+     * Obtiene todos los vehículos de un usuario (activos e inactivos) - para administradores
+     */
+    public List<VehiculoDto> buscarTodosPorUsuario(Long usuarioId) {
+        if (usuarioId == null) {
+            throw new IllegalArgumentException("El ID del usuario no puede ser null");
+        }
+        
+        // Retornar todos los vehículos del usuario, incluyendo inactivos
+        return vehiculoRepo.findByUsuarioId(usuarioId).stream()
+                .map(VehiculoMapper::toDto)
+                .toList();
+    }
+
     @Override
     public List<VehiculoDto> buscarPorTipo(Vehiculo.TipoVehiculo tipo) {
         if (tipo == null) {

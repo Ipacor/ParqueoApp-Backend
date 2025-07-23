@@ -63,6 +63,21 @@ public class VehiculoController {
             return ResponseEntity.ok(vehiculos);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/usuario/{usuarioId}/todos")
+    @PreAuthorize("hasAuthority('VEHICULO_LEER')")
+    public ResponseEntity<List<VehiculoDto>> buscarTodosPorUsuario(@PathVariable Long usuarioId) {
+        try {
+            List<VehiculoDto> vehiculos = vehiculoService.buscarTodosPorUsuario(usuarioId);
+            return ResponseEntity.ok(vehiculos);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
