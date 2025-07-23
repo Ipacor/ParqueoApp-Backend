@@ -24,9 +24,9 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     // Métodos para estadísticas del dashboard
     long countByEstado(Reserva.EstadoReserva estado);
     
-    @Query("SELECT COUNT(r) FROM Reserva r WHERE DATE(r.fechaHoraInicio) = :fecha")
+    @Query("SELECT COUNT(r) FROM Reserva r WHERE CAST(r.fechaHoraInicio AS date) = :fecha")
     long countByFechaReserva(@Param("fecha") java.time.LocalDate fecha);
     
-    @Query("SELECT COUNT(r) FROM Reserva r WHERE DATE(r.fechaHoraInicio) BETWEEN :fechaInicio AND :fechaFin")
+    @Query("SELECT COUNT(r) FROM Reserva r WHERE CAST(r.fechaHoraInicio AS date) BETWEEN :fechaInicio AND :fechaFin")
     long countByFechaReservaBetween(@Param("fechaInicio") java.time.LocalDate fechaInicio, @Param("fechaFin") java.time.LocalDate fechaFin);
 }

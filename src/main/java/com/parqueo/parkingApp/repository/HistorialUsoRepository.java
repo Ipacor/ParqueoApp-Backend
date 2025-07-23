@@ -21,6 +21,6 @@ public interface HistorialUsoRepository extends JpaRepository<HistorialUso, Long
     List<HistorialUso> findByReservaId(Long reservaId);
     
     // Métodos para estadísticas del dashboard
-    @Query("SELECT COUNT(h) FROM HistorialUso h WHERE h.fechaEntrada BETWEEN :fechaInicio AND :fechaFin")
+    @Query("SELECT COUNT(h) FROM HistorialUso h WHERE h.fechaUso BETWEEN :fechaInicio AND :fechaFin")
     long countByFechaEntradaBetween(@Param("fechaInicio") java.time.LocalDateTime fechaInicio, @Param("fechaFin") java.time.LocalDateTime fechaFin);
 }

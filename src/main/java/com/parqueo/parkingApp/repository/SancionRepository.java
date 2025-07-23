@@ -22,6 +22,6 @@ public interface SancionRepository extends JpaRepository<Sancion, Long> {
     // Métodos para estadísticas del dashboard
     long countByEstado(Sancion.EstadoSancion estado);
     
-    @Query("SELECT COUNT(s) FROM Sancion s WHERE s.fechaSancion BETWEEN :fechaInicio AND :fechaFin")
+    @Query("SELECT COUNT(s) FROM Sancion s WHERE s.registroSancion BETWEEN :fechaInicio AND :fechaFin")
     long countByFechaSancionBetween(@Param("fechaInicio") LocalDateTime fechaInicio, @Param("fechaFin") LocalDateTime fechaFin);
 }
