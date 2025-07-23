@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/dashboard")
@@ -129,6 +131,75 @@ public class DashboardController {
             error.put("error", "Error al obtener estadísticas del dashboard");
             error.put("message", e.getMessage());
             return ResponseEntity.internalServerError().body(error);
+        }
+    }
+
+    @GetMapping("/alertas")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<List<Map<String, Object>>> obtenerAlertas() {
+        try {
+            List<Map<String, Object>> alertas = new ArrayList<>();
+            
+            // Alerta 1: Espacios en mantenimiento
+            long espaciosMantenimiento = espacioRepository.countByEstado(EspacioDisponible.EstadoEspacio.MANTENIMIENTO);
+            if (espaciosMantenimiento > 0) {
+                Map<String, Object> alertaMantenimiento = new HashMap<>();
+                alertaMantenimiento.put("titulo", "Espacios en mantenimiento");
+                alertaMantenimiento.put("descripcion", espaciosMantenimiento + " espacios requieren atención");
+                alertaMantenimiento.put("tipo", "mantenimiento");
+                alertaMantenimiento.put("cantidad", espaciosMantenimiento);
+                alertaMantenimiento.put("prioridad", "Alta");
+                alertaMantenimiento.put("color", "orange");
+                alertas.add(alertaMantenimiento);
+            }
+            
+            // Alerta 2: Sanciones activas sin resolver
+            long sancionesActivas = sancionRepository.countByEstado(Sancion.EstadoSancion.ACTIVA);
+            if (sancionesActivas > 0) {
+                Map<String, Object> alertaSanciones = new HashMap<>();
+                alertaSanciones.put("titulo", "Sanciones pendientes");
+                alertaSanciones.put("descripcion", sancionesActivas + " sanciones sin resolver");
+                alertaSanciones.put("tipo", "sanciones");
+                alertaSanciones.put("cantidad", sancionesActivas);
+                alertaSanciones.put("prioridad", "Media");
+                alertaSanciones.put("color", "red");
+                alertas.add(alertaSanciones);
+            }
+            
+            // Alerta 3: Reservas conflictivas (reservas que se solapan)
+            List<Reserva> reservasConflictivas = reservaRepository.findReservasConflictivas();
+            if (!reservasConflictivas.isEmpty()) {
+                Map<String, Object> alertaReservas = new HashMap<>();
+                alertaReservas.put("titulo", "Reservas conflictivas");
+                alertaReservas.put("descripcion", reservasConflictivas.size() + " reservas con horarios solapados");
+                alertaReservas.put("tipo", "reservas");
+                alertaReservas.put("cantidad", reservasConflictivas.size());
+                alertaReservas.put("prioridad", "Baja");
+                alertaReservas.put("color", "blue");
+                alertas.add(alertaReservas);
+            }
+            
+            // Alerta 4: Espacios ocupados por mucho tiempo
+            LocalDateTime horaLimite = LocalDateTime.now().minusHours(4);
+            List<EspacioDisponible> espaciosOcupadosLargoTiempo = espacioRepository.findEspaciosOcupadosLargoTiempo(horaLimite);
+            if (!espaciosOcupadosLargoTiempo.isEmpty()) {
+                Map<String, Object> alertaOcupacion = new HashMap<>();
+                alertaOcupacion.put("titulo", "Ocupación prolongada");
+                alertaOcupacion.put("descripcion", espaciosOcupadosLargoTiempo.size() + " espacios ocupados por más de 4 horas");
+                alertaOcupacion.put("tipo", "ocupacion");
+                alertaOcupacion.put("cantidad", espaciosOcupadosLargoTiempo.size());
+                alertaOcupacion.put("prioridad", "Media");
+                alertaOcupacion.put("color", "yellow");
+                alertas.add(alertaOcupacion);
+            }
+            
+            return ResponseEntity.ok(alertas);
+            
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Error al obtener alertas del dashboard");
+            error.put("message", e.getMessage());
+            return ResponseEntity.internalServerError().body(List.of(error));
         }
     }
 } 

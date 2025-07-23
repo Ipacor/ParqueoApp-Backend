@@ -29,4 +29,12 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     
     @Query("SELECT COUNT(r) FROM Reserva r WHERE CAST(r.fechaHoraInicio AS date) BETWEEN :fechaInicio AND :fechaFin")
     long countByFechaReservaBetween(@Param("fechaInicio") java.time.LocalDate fechaInicio, @Param("fechaFin") java.time.LocalDate fechaFin);
+    
+    // Método para encontrar reservas conflictivas (que se solapan)
+    @Query("SELECT r1 FROM Reserva r1, Reserva r2 WHERE r1.id != r2.id AND r1.espacio = r2.espacio " +
+           "AND r1.estado IN ('RESERVADO', 'ACTIVO') AND r2.estado IN ('RESERVADO', 'ACTIVO') " +
+           "AND ((r1.fechaHoraInicio BETWEEN r2.fechaHoraInicio AND r2.fechaHoraFin) " +
+           "OR (r1.fechaHoraFin BETWEEN r2.fechaHoraInicio AND r2.fechaHoraFin) " +
+           "OR (r2.fechaHoraInicio BETWEEN r1.fechaHoraInicio AND r1.fechaHoraFin))")
+    List<Reserva> findReservasConflictivas();
 }
