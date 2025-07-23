@@ -74,13 +74,21 @@ public class ReservaController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('RESERVA_ELIMINAR')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        System.out.println("=== PETICIÓN DELETE RECIBIDA PARA RESERVA #" + id + " ===");
         try {
             reservaService.eliminar(id);
+            System.out.println("Reserva #" + id + " eliminada exitosamente");
             return ResponseEntity.noContent().build();
         } catch (EntityNotFoundException e) {
+            System.out.println("Reserva #" + id + " no encontrada: " + e.getMessage());
             return ResponseEntity.notFound().build();
         } catch (IllegalArgumentException e) {
+            System.out.println("Error de argumento para reserva #" + id + ": " + e.getMessage());
             return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            System.out.println("Error inesperado eliminando reserva #" + id + ": " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -167,6 +175,17 @@ public class ReservaController {
     public ResponseEntity<String> actualizarEspacios() {
         reservaService.liberarEspaciosReservadosExpirados();
         return ResponseEntity.ok("Espacios actualizados correctamente");
+    }
+
+    @PostMapping("/forzar-expiracion-reserva/{id}")
+    @PreAuthorize("hasAuthority('RESERVA_LIBERAR_EXPIRADOS')")
+    public ResponseEntity<String> forzarExpiracionReserva(@PathVariable Long id) {
+        try {
+            reservaService.forzarExpiracionReserva(id);
+            return ResponseEntity.ok("Reserva " + id + " expirada correctamente");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error al expirar reserva: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{id}/completa")
