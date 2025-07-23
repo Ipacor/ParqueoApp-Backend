@@ -1,30 +1,29 @@
 package com.parqueo.parkingApp.service;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-
 import com.parqueo.parkingApp.dto.ReservaDto;
 import com.parqueo.parkingApp.mapper.ReservaMapper;
-import com.parqueo.parkingApp.model.EscaneoQR;
-import com.parqueo.parkingApp.model.EspacioDisponible;
-import com.parqueo.parkingApp.model.HistorialUso;
-import com.parqueo.parkingApp.model.Notificacion;
 import com.parqueo.parkingApp.model.Reserva;
 import com.parqueo.parkingApp.model.Usuario;
 import com.parqueo.parkingApp.model.Vehiculo;
-import com.parqueo.parkingApp.repository.EscaneoQRRepository;
-import com.parqueo.parkingApp.repository.EspacioDisponibleRepository;
+import com.parqueo.parkingApp.model.EspacioDisponible;
+import com.parqueo.parkingApp.model.EscaneoQR;
+import com.parqueo.parkingApp.model.HistorialUso;
+import com.parqueo.parkingApp.model.Notificacion;
 import com.parqueo.parkingApp.repository.ReservaRepository;
 import com.parqueo.parkingApp.repository.UsuarioRepository;
 import com.parqueo.parkingApp.repository.VehiculoRepository;
-
+import com.parqueo.parkingApp.repository.EspacioDisponibleRepository;
+import com.parqueo.parkingApp.repository.EscaneoQRRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.time.format.DateTimeFormatter;
 
 @Service
 @RequiredArgsConstructor
@@ -467,6 +466,67 @@ public class ReservaServiceImpl implements ReservaService {
             throw new IllegalArgumentException("La fecha de inicio no puede estar más de 1 hora en el pasado");
         }
         */
+    }
+
+    @Override
+    @Scheduled(fixedRate = 300000) // Cada 5 minutos
+    public void expirarReservasAutomaticamente() {
+        LocalDateTime ahora = LocalDateTime.now();
+        List<Reserva> reservasActivas = reservaRepo.findByEstadoWithRelations(Reserva.EstadoReserva.RESERVADO);
+        
+        for (Reserva reserva : reservasActivas) {
+            if (reserva.getFechaHoraFin() != null && reserva.getFechaHoraFin().isBefore(ahora)) {
+                reserva.setEstado(Reserva.EstadoReserva.EXPIRADO);
+                reservaRepo.save(reserva);
+                
+                // Crear notificación de expiración
+                notificacionService.crearNotificacion(
+                    reserva.getUsuario(),
+                    "Reserva Expirada",
+                    "Tu reserva #" + reserva.getId() + " ha expirado automáticamente. El espacio " + 
+                    reserva.getEspacio().getNumeroEspacio() + " ya no está reservado para ti.",
+                    com.parqueo.parkingApp.model.Notificacion.TipoNotificacion.RESERVA_EXPIRADA
+                );
+            }
+        }
+    }
+
+    @Override
+    @Scheduled(fixedRate = 600000) // Cada 10 minutos
+    public void crearRecordatoriosAutomaticos() {
+        LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime en30Minutos = ahora.plusMinutes(30);
+        LocalDateTime en1Hora = ahora.plusHours(1);
+        
+        List<Reserva> reservasActivas = reservaRepo.findByEstadoWithRelations(Reserva.EstadoReserva.RESERVADO);
+        
+        for (Reserva reserva : reservasActivas) {
+            LocalDateTime fechaFin = reserva.getFechaHoraFin();
+            
+            // Recordatorio 30 minutos antes de expirar
+            if (fechaFin != null && fechaFin.isAfter(ahora) && fechaFin.isBefore(en30Minutos)) {
+                notificacionService.crearNotificacion(
+                    reserva.getUsuario(),
+                    "Recordatorio: Reserva Expira Pronto",
+                    "Tu reserva #" + reserva.getId() + " expira en menos de 30 minutos. " +
+                    "Espacio: " + reserva.getEspacio().getNumeroEspacio() + 
+                    ", Expira: " + fechaFin.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")),
+                    com.parqueo.parkingApp.model.Notificacion.TipoNotificacion.RECORDATORIO_EXPIRACION
+                );
+            }
+            
+            // Recordatorio 1 hora antes de expirar
+            if (fechaFin != null && fechaFin.isAfter(en30Minutos) && fechaFin.isBefore(en1Hora)) {
+                notificacionService.crearNotificacion(
+                    reserva.getUsuario(),
+                    "Recordatorio: Reserva Expira en 1 Hora",
+                    "Tu reserva #" + reserva.getId() + " expira en 1 hora. " +
+                    "Espacio: " + reserva.getEspacio().getNumeroEspacio() + 
+                    ", Expira: " + fechaFin.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")),
+                    com.parqueo.parkingApp.model.Notificacion.TipoNotificacion.RECORDATORIO_EXPIRACION
+                );
+            }
+        }
     }
 }
 

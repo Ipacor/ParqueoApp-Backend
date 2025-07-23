@@ -19,5 +19,9 @@ public interface ReservaService {
     List<ReservaDto> buscarReservasActivas();
     void liberarEspaciosReservadosExpirados();
     void forzarExpiracionReserva(Long reservaId);
+    
+    // Métodos para tareas programadas
+    void expirarReservasAutomaticamente();
+    void crearRecordatoriosAutomaticos();
 }
 

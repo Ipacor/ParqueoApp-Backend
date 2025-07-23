@@ -133,4 +133,136 @@ public class NotificacionController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor: " + e.getMessage());
         }
     }
+
+    @GetMapping("/usuario/{usuarioId}/estadisticas")
+    @PreAuthorize("hasAuthority('NOTIFICACION_LEER')")
+    public ResponseEntity<Map<String, Object>> obtenerEstadisticas(@PathVariable Long usuarioId) {
+        try {
+            Map<String, Object> estadisticas = service.obtenerEstadisticasGenerales(usuarioId);
+            return ResponseEntity.ok(estadisticas);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/usuario/{usuarioId}/estadisticas-por-tipo")
+    @PreAuthorize("hasAuthority('NOTIFICACION_LEER')")
+    public ResponseEntity<Map<String, Long>> obtenerEstadisticasPorTipo(@PathVariable Long usuarioId) {
+        try {
+            Map<String, Long> estadisticas = service.obtenerEstadisticasPorTipo(usuarioId);
+            return ResponseEntity.ok(estadisticas);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/usuario/{usuarioId}/tipo/{tipo}")
+    @PreAuthorize("hasAuthority('NOTIFICACION_LEER')")
+    public ResponseEntity<List<NotificacionDto>> obtenerNotificacionesPorTipo(
+            @PathVariable Long usuarioId,
+            @PathVariable String tipo) {
+        try {
+            Notificacion.TipoNotificacion tipoNotificacion = Notificacion.TipoNotificacion.valueOf(tipo.toUpperCase());
+            List<Notificacion> notificaciones = service.obtenerNotificacionesPorTipo(usuarioId, tipoNotificacion);
+            List<NotificacionDto> dtos = notificaciones.stream().map(NotificacionMapper::toDto).toList();
+            return ResponseEntity.ok(dtos);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @DeleteMapping("/usuario/{usuarioId}/tipo/{tipo}")
+    @PreAuthorize("hasAuthority('NOTIFICACION_ELIMINAR')")
+    public ResponseEntity<Void> eliminarNotificacionesPorTipo(
+            @PathVariable Long usuarioId,
+            @PathVariable String tipo) {
+        try {
+            Notificacion.TipoNotificacion tipoNotificacion = Notificacion.TipoNotificacion.valueOf(tipo.toUpperCase());
+            service.eliminarNotificacionesPorTipo(usuarioId, tipoNotificacion);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/recordatorio-entrada/{usuarioId}")
+    @PreAuthorize("hasAuthority('NOTIFICACION_CREAR')")
+    public ResponseEntity<?> crearRecordatorioEntrada(
+            @PathVariable Long usuarioId,
+            @RequestBody Map<String, String> request) {
+        try {
+            String espacio = request.get("espacio");
+            String fecha = request.get("fecha");
+            
+            if (espacio == null || fecha == null) {
+                return ResponseEntity.badRequest().body("Espacio y fecha son obligatorios");
+            }
+            
+            Usuario usuario = usuarioRepository.findById(usuarioId)
+                    .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+            
+            service.crearRecordatorioEntrada(usuario, espacio, fecha);
+            
+            return ResponseEntity.ok().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/recordatorio-salida/{usuarioId}")
+    @PreAuthorize("hasAuthority('NOTIFICACION_CREAR')")
+    public ResponseEntity<?> crearRecordatorioSalida(
+            @PathVariable Long usuarioId,
+            @RequestBody Map<String, String> request) {
+        try {
+            String espacio = request.get("espacio");
+            String fecha = request.get("fecha");
+            
+            if (espacio == null || fecha == null) {
+                return ResponseEntity.badRequest().body("Espacio y fecha son obligatorios");
+            }
+            
+            Usuario usuario = usuarioRepository.findById(usuarioId)
+                    .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+            
+            service.crearRecordatorioSalida(usuario, espacio, fecha);
+            
+            return ResponseEntity.ok().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/mantenimiento/{usuarioId}")
+    @PreAuthorize("hasAuthority('NOTIFICACION_CREAR')")
+    public ResponseEntity<?> enviarNotificacionMantenimiento(
+            @PathVariable Long usuarioId,
+            @RequestBody Map<String, String> request) {
+        try {
+            String mensaje = request.get("mensaje");
+            
+            if (mensaje == null) {
+                return ResponseEntity.badRequest().body("Mensaje es obligatorio");
+            }
+            
+            Usuario usuario = usuarioRepository.findById(usuarioId)
+                    .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+            
+            service.crearNotificacionMantenimiento(usuario, mensaje);
+            
+            return ResponseEntity.ok().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor: " + e.getMessage());
+        }
+    }
 } 

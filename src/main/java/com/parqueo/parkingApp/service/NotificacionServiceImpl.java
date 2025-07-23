@@ -10,13 +10,13 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class NotificacionServiceImpl implements NotificacionService {
 
     private final NotificacionRepository notificacionRepository;
-    private final UsuarioRepository usuarioRepository;
 
     @Override
     public Notificacion crearNotificacion(Usuario usuario, String titulo, String mensaje, Notificacion.TipoNotificacion tipo) {
@@ -82,5 +82,74 @@ public class NotificacionServiceImpl implements NotificacionService {
                 .toList();
         
         notificacionRepository.deleteAll(notificacionesAntiguas);
+    }
+
+    @Override
+    public Map<String, Long> obtenerEstadisticasPorTipo(Long usuarioId) {
+        List<Notificacion> notificaciones = notificacionRepository.findByUsuarioIdOrderByFechaCreacionDesc(usuarioId);
+        return notificaciones.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                    n -> n.getTipo().name(),
+                    java.util.stream.Collectors.counting()
+                ));
+    }
+
+    @Override
+    public Map<String, Object> obtenerEstadisticasGenerales(Long usuarioId) {
+        List<Notificacion> notificaciones = notificacionRepository.findByUsuarioIdOrderByFechaCreacionDesc(usuarioId);
+        long total = notificaciones.size();
+        long noLeidas = notificaciones.stream().filter(n -> !n.getLeida()).count();
+        long leidas = total - noLeidas;
+        
+        Map<String, Object> estadisticas = new java.util.HashMap<>();
+        estadisticas.put("total", total);
+        estadisticas.put("noLeidas", noLeidas);
+        estadisticas.put("leidas", leidas);
+        estadisticas.put("porTipo", obtenerEstadisticasPorTipo(usuarioId));
+        
+        return estadisticas;
+    }
+
+    @Override
+    public void crearRecordatorioEntrada(Usuario usuario, String espacio, String fecha) {
+        crearNotificacion(
+            usuario,
+            "Recordatorio: Entrada Pendiente",
+            "Recuerda que tienes una reserva activa para el espacio " + espacio + 
+            " el " + fecha + ". No olvides registrar tu entrada.",
+            com.parqueo.parkingApp.model.Notificacion.TipoNotificacion.RECORDATORIO_ENTRADA
+        );
+    }
+
+    @Override
+    public void crearRecordatorioSalida(Usuario usuario, String espacio, String fecha) {
+        crearNotificacion(
+            usuario,
+            "Recordatorio: Salida Pendiente",
+            "Tu reserva en el espacio " + espacio + " expira el " + fecha + 
+            ". Recuerda registrar tu salida antes de que expire.",
+            com.parqueo.parkingApp.model.Notificacion.TipoNotificacion.RECORDATORIO_SALIDA
+        );
+    }
+
+    @Override
+    public void crearNotificacionMantenimiento(Usuario usuario, String mensaje) {
+        crearNotificacion(
+            usuario,
+            "Mantenimiento del Sistema",
+            mensaje,
+            com.parqueo.parkingApp.model.Notificacion.TipoNotificacion.MANTENIMIENTO
+        );
+    }
+
+    @Override
+    public List<Notificacion> obtenerNotificacionesPorTipo(Long usuarioId, Notificacion.TipoNotificacion tipo) {
+        return notificacionRepository.findByUsuarioIdAndTipoOrderByFechaCreacionDesc(usuarioId, tipo);
+    }
+
+    @Override
+    public void eliminarNotificacionesPorTipo(Long usuarioId, Notificacion.TipoNotificacion tipo) {
+        List<Notificacion> notificaciones = notificacionRepository.findByUsuarioIdAndTipoOrderByFechaCreacionDesc(usuarioId, tipo);
+        notificacionRepository.deleteAll(notificaciones);
     }
 } 

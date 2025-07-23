@@ -62,7 +62,11 @@ public class Notificacion {
         RESERVA_CREADA,
         ENTRADA_REGISTRADA,
         SALIDA_REGISTRADA,
-        SISTEMA
+        SISTEMA,
+        RECORDATORIO_ENTRADA,
+        RECORDATORIO_SALIDA,
+        RECORDATORIO_EXPIRACION,
+        MANTENIMIENTO
     }
 
     @PrePersist
