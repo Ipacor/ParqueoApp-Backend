@@ -20,4 +20,5 @@ public interface HistorialUsoService {
     void registrarEvento(Usuario usuario, HistorialUso.AccionHistorial accion);
     void registrarEvento(Usuario usuario, com.parqueo.parkingApp.model.EspacioDisponible espacio, com.parqueo.parkingApp.model.Reserva reserva, com.parqueo.parkingApp.model.Vehiculo vehiculo, HistorialUso.AccionHistorial accion);
     List<HistorialUsoDto> obtenerMiHistorial();
+    void eliminarPorReserva(Long reservaId);
 }

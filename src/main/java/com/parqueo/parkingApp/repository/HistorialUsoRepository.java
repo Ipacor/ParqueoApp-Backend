@@ -15,4 +15,6 @@ public interface HistorialUsoRepository extends JpaRepository<HistorialUso, Long
     List<HistorialUso> findByUsuario(Usuario usuario);
 
     List<HistorialUso> findByEspacioId(Long espacioId);
+    
+    List<HistorialUso> findByReservaId(Long reservaId);
 }

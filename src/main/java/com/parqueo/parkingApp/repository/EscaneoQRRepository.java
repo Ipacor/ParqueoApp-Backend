@@ -24,4 +24,6 @@ public interface EscaneoQRRepository extends JpaRepository<EscaneoQR, Long> {
 
     @Query("SELECT e FROM EscaneoQR e LEFT JOIN FETCH e.reserva r LEFT JOIN FETCH r.espacio LEFT JOIN FETCH r.usuario LEFT JOIN FETCH r.vehiculo")
     List<EscaneoQR> findAllWithReservaAndEspacio();
+    
+    void deleteByReservaId(Long reservaId);
 }

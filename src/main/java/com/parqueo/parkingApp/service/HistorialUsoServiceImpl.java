@@ -207,6 +207,24 @@ public class HistorialUsoServiceImpl implements HistorialUsoService {
                 .toList();
     }
 
+    @Override
+    public void eliminarPorReserva(Long reservaId) {
+        if (reservaId == null) {
+            throw new IllegalArgumentException("El ID de la reserva no puede ser null");
+        }
+        
+        System.out.println("Eliminando registros de historial para reserva #" + reservaId);
+        List<HistorialUso> registros = repository.findByReservaId(reservaId);
+        System.out.println("Encontrados " + registros.size() + " registros de historial para eliminar");
+        
+        for (HistorialUso registro : registros) {
+            repository.deleteById(registro.getId());
+            System.out.println("Eliminado registro de historial #" + registro.getId());
+        }
+        
+        System.out.println("Todos los registros de historial eliminados para reserva #" + reservaId);
+    }
+
     private void validarDatosHistorial(HistorialUsoDto dto) {
         if (dto.getUsuarioId() == null) {
             throw new IllegalArgumentException("El ID del usuario no puede estar vacío");

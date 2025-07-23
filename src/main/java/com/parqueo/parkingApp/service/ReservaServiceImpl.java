@@ -186,6 +186,16 @@ public class ReservaServiceImpl implements ReservaService {
                 .orElseThrow(() -> new EntityNotFoundException("Reserva no encontrada con ID: " + id));
             System.out.println("Reserva encontrada: " + reserva.getId());
             
+            // Eliminar registros de historial asociados primero
+            System.out.println("Eliminando registros de historial asociados...");
+            historialUsoService.eliminarPorReserva(id);
+            System.out.println("Registros de historial eliminados");
+            
+            // Eliminar escaneos QR asociados
+            System.out.println("Eliminando escaneos QR asociados...");
+            escaneoQRRepo.deleteByReservaId(id);
+            System.out.println("Escaneos QR eliminados");
+            
             EspacioDisponible espacio = reserva.getEspacio();
             if (espacio != null) {
                 System.out.println("Liberando espacio: " + espacio.getNumeroEspacio());
