@@ -38,4 +38,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     
     @Query("SELECT COUNT(u) FROM Usuario u WHERE u.rol.nombre = :rol")
     long countByRolNombre(@Param("rol") String rol);
+    
+    // Método para obtener usuarios que NO tienen un rol específico
+    @Query("SELECT u FROM Usuario u WHERE u.rol.nombre != :rol")
+    List<Usuario> findByRolNombreNot(@Param("rol") String rol);
 }

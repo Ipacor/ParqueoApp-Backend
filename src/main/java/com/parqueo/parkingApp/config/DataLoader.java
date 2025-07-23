@@ -217,5 +217,6 @@ public class DataLoader implements CommandLineRunner {
         System.out.println("- " + todosLosPermisos.size() + " permisos creados");
         System.out.println("- 5 roles creados con sus permisos asignados");
         System.out.println("- 5 usuarios de ejemplo creados");
+        System.out.println("Nota: Los datos únicos se generarán automáticamente cuando se creen nuevos usuarios desde el frontend.");
     }
 } 
