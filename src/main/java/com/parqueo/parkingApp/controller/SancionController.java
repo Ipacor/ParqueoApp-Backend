@@ -203,17 +203,6 @@ public class SancionController {
             // Crear el detalle usando el servicio inyectado
             SancionDetalleDto detalleCreado = detalleService.crear(detalleDto);
 
-            // Enviar notificación al usuario sancionado
-            Usuario usuarioSancionado = usuarioRepository.findById(usuarioId)
-                    .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
-            
-            String tituloNotificacion = "Sanción Aplicada";
-            String mensajeNotificacion = String.format("Se ha aplicado una sanción por: %s. Motivo: %s", 
-                    reglasEstacionamientoRepository.findById(reglaId).map(ReglasEstacionamiento::getDescripcion).orElse("Infracción"),
-                    motivo);
-            
-            notificacionService.crearNotificacion(usuarioSancionado, tituloNotificacion, mensajeNotificacion, Notificacion.TipoNotificacion.SANCION);
-
             return ResponseEntity.status(HttpStatus.CREATED).body(sancionCreada);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

@@ -16,6 +16,8 @@ import com.parqueo.parkingApp.repository.VehiculoRepository;
 import com.parqueo.parkingApp.repository.ReglasEstacionamientoRepository;
 import com.parqueo.parkingApp.model.ReglasEstacionamiento;
 import com.parqueo.parkingApp.service.SancionDetalleService;
+import com.parqueo.parkingApp.service.NotificacionService;
+import com.parqueo.parkingApp.model.Notificacion;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,6 +38,9 @@ public class SancionServiceImpl implements SancionService {
     private ReglasEstacionamientoRepository reglasEstacionamientoRepository;
     @Autowired
     private SancionDetalleService sancionDetalleService;
+    
+    @Autowired
+    private NotificacionService notificacionService;
 
     @Override
     public List<SancionDto> obtenerTodos() {
@@ -101,6 +106,20 @@ public class SancionServiceImpl implements SancionService {
         }
         if (original.getEstado() != dto.getEstado() && dto.getEstado() == Sancion.EstadoSancion.RESUELTA) {
             historialUsoService.registrarEvento(actualizada.getUsuario(), HistorialUso.AccionHistorial.DESBLOQUEO);
+            
+            // Crear notificación de sanción resuelta
+            String tituloNotificacion = "Sanción Resuelta";
+            String mensajeNotificacion = String.format("Tu sanción #%d ha sido resuelta por un administrador. Ya puedes volver a usar el sistema.", 
+                    actualizada.getId());
+            notificacionService.crearNotificacion(actualizada.getUsuario(), tituloNotificacion, mensajeNotificacion, Notificacion.TipoNotificacion.DESBLOQUEO);
+        }
+        
+        if (original.getEstado() != dto.getEstado() && dto.getEstado() == Sancion.EstadoSancion.ANULADA) {
+            // Crear notificación de sanción anulada
+            String tituloNotificacion = "Sanción Anulada";
+            String mensajeNotificacion = String.format("Tu sanción #%d ha sido anulada por un administrador. La sanción ya no tiene efecto.", 
+                    actualizada.getId());
+            notificacionService.crearNotificacion(actualizada.getUsuario(), tituloNotificacion, mensajeNotificacion, Notificacion.TipoNotificacion.DESBLOQUEO);
         }
         Sancion guardada = repository.save(actualizada);
         actualizarEstadoUsuarioPorSanciones(guardada.getUsuario());
@@ -256,6 +275,13 @@ public class SancionServiceImpl implements SancionService {
 
         Sancion guardada = repository.save(nueva);
         historialUsoService.registrarEvento(guardada.getUsuario(), HistorialUso.AccionHistorial.SANCION);
+
+        // Crear notificación de sanción aplicada
+        String tituloNotificacion = "Sanción Aplicada";
+        String mensajeNotificacion = String.format("Se ha aplicado una sanción por: %s. Motivo: %s", 
+                guardada.getTipoCastigo() != null ? guardada.getTipoCastigo() : "Infracción",
+                guardada.getMotivo());
+        notificacionService.crearNotificacion(guardada.getUsuario(), tituloNotificacion, mensajeNotificacion, Notificacion.TipoNotificacion.SANCION);
 
         // Lógica de activar/inactivar usuario según sanciones de suspensión
         actualizarEstadoUsuarioPorSanciones(guardada.getUsuario());
