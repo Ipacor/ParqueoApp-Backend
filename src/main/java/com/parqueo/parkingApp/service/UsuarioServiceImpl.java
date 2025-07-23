@@ -14,15 +14,11 @@ import com.parqueo.parkingApp.repository.SancionRepository;
 import com.parqueo.parkingApp.repository.HistorialUsoRepository;
 import com.parqueo.parkingApp.repository.EscaneoQRRepository;
 import com.parqueo.parkingApp.repository.SancionDetalleRepository;
-import com.parqueo.parkingApp.repository.EspacioDisponibleRepository;
-import com.parqueo.parkingApp.model.EspacioDisponible;
-import com.parqueo.parkingApp.model.HistorialUso;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,7 +34,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final HistorialUsoRepository historialUsoRepository;
     private final EscaneoQRRepository escaneoQRRepository;
     private final SancionDetalleRepository sancionDetalleRepository;
-    private final EspacioDisponibleRepository espacioRepository;
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -77,11 +72,6 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setRol(rol);
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
         usuarioGuardado = usuarioRepository.findById(usuarioGuardado.getId()).orElse(usuarioGuardado);
-        
-        // Generar datos únicos automáticamente para usuarios no administradores
-        if (!"ADMINISTRADOR".equalsIgnoreCase(usuarioGuardado.getRol().getNombre())) {
-            generarDatosUnicosParaUsuario(usuarioGuardado);
-        }
         
         return UsuarioMapper.toDto(usuarioGuardado);
     }
@@ -281,74 +271,4 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
     }
 
-    // === Generación automática de datos únicos ===
-    private void generarDatosUnicosParaUsuario(Usuario usuario) {
-        try {
-            // Obtener el siguiente ID disponible para generar datos únicos
-            long siguienteId = usuarioRepository.count() + 1;
-            
-            // Crear vehículo único para el usuario
-            Vehiculo vehiculo = new Vehiculo();
-            vehiculo.setPlaca("ABC" + String.format("%03d", siguienteId));
-            vehiculo.setMarca("Toyota");
-            vehiculo.setModelo("Corolla " + (2020 + (int)siguienteId));
-            vehiculo.setColor("Azul");
-            vehiculo.setTipo(Vehiculo.TipoVehiculo.AUTOMOVIL);
-            vehiculo.setUsuario(usuario);
-            vehiculoRepository.save(vehiculo);
-
-            // Crear historial de uso único
-            crearHistorialUnicoParaUsuario(usuario, vehiculo, siguienteId);
-            
-            System.out.println("Datos únicos generados automáticamente para usuario: " + usuario.getUsername());
-            
-        } catch (Exception e) {
-            System.err.println("Error al generar datos únicos para usuario " + usuario.getUsername() + ": " + e.getMessage());
-        }
-    }
-
-    private void crearHistorialUnicoParaUsuario(Usuario usuario, Vehiculo vehiculo, long indice) {
-        try {
-            // Obtener un espacio disponible o crear uno si no existe
-            var espacios = espacioRepository.findByEstado(EspacioDisponible.EstadoEspacio.DISPONIBLE);
-            EspacioDisponible espacio;
-            
-            if (espacios.isEmpty()) {
-                // Crear un espacio si no hay disponibles
-                espacio = new EspacioDisponible();
-                espacio.setNumeroEspacio("A" + String.format("%02d", (int)indice));
-                espacio.setZona("Zona A");
-                espacio.setUbicacion("Nivel 1");
-                espacio.setEstado(EspacioDisponible.EstadoEspacio.DISPONIBLE);
-                espacioRepository.save(espacio);
-            } else {
-                espacio = espacios.get(0);
-            }
-
-            // Crear historial de entrada
-            HistorialUso historialEntrada = new HistorialUso();
-            historialEntrada.setUsuario(usuario);
-            historialEntrada.setVehiculo(vehiculo);
-            historialEntrada.setEspacio(espacio);
-            historialEntrada.setFechaUso(LocalDateTime.now().minusDays(indice));
-            historialEntrada.setAccion(HistorialUso.AccionHistorial.ENTRADA);
-            historialEntrada.setNotas("Entrada automática - Usuario " + usuario.getUsername());
-            
-            historialUsoRepository.save(historialEntrada);
-            
-            // Crear historial de salida
-            HistorialUso historialSalida = new HistorialUso();
-            historialSalida.setUsuario(usuario);
-            historialSalida.setVehiculo(vehiculo);
-            historialSalida.setEspacio(espacio);
-            historialSalida.setFechaUso(LocalDateTime.now().minusDays(indice).plusHours(1));
-            historialSalida.setAccion(HistorialUso.AccionHistorial.SALIDA);
-            historialSalida.setNotas("Salida automática - Usuario " + usuario.getUsername());
-            
-            historialUsoRepository.save(historialSalida);
-            
-        } catch (Exception e) {
-            System.err.println("Error al crear historial para usuario " + usuario.getUsername() + ": " + e.getMessage());
-        }
-    }
 }
