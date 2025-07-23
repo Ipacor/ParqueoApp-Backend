@@ -306,10 +306,26 @@ public class SancionServiceImpl implements SancionService {
                 usuario.setActivo(false);
                 usuarioRepository.save(usuario);
             }
+            // Desactivar todos los vehículos asociados
+            List<com.parqueo.parkingApp.model.Vehiculo> vehiculosUsuario = vehiculoRepository.findByUsuarioId(usuario.getId());
+            for (com.parqueo.parkingApp.model.Vehiculo vehiculo : vehiculosUsuario) {
+                if (Boolean.TRUE.equals(vehiculo.getActivo())) {
+                    vehiculo.setActivo(false);
+                    vehiculoRepository.save(vehiculo);
+                }
+            }
         } else {
             if (!Boolean.TRUE.equals(usuario.getActivo())) {
                 usuario.setActivo(true);
                 usuarioRepository.save(usuario);
+            }
+            // Activar todos los vehículos asociados
+            List<com.parqueo.parkingApp.model.Vehiculo> vehiculosUsuario = vehiculoRepository.findByUsuarioId(usuario.getId());
+            for (com.parqueo.parkingApp.model.Vehiculo vehiculo : vehiculosUsuario) {
+                if (!Boolean.TRUE.equals(vehiculo.getActivo())) {
+                    vehiculo.setActivo(true);
+                    vehiculoRepository.save(vehiculo);
+                }
             }
         }
     }
