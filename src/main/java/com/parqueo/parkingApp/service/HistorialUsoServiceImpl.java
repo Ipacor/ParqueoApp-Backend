@@ -8,7 +8,7 @@ import com.parqueo.parkingApp.model.EspacioDisponible;
 import com.parqueo.parkingApp.model.Reserva;
 import com.parqueo.parkingApp.model.Vehiculo;
 import com.parqueo.parkingApp.repository.HistorialUsoRepository;
-import com.parqueo.parkingApp.service.HistorialUsoService;
+import com.parqueo.parkingApp.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -24,6 +24,7 @@ public class HistorialUsoServiceImpl implements HistorialUsoService {
 
     private final HistorialUsoRepository repository;
     private final HistorialUsoMapper mapper;
+    private final UsuarioRepository usuarioRepository;
 
     @Override
     public List<HistorialUsoDto> obtenerTodos() {
@@ -194,18 +195,14 @@ public class HistorialUsoServiceImpl implements HistorialUsoService {
 
     @Override
     public List<HistorialUsoDto> obtenerMiHistorial() {
-        // Obtener el usuario actual del contexto de seguridad
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || authentication.getPrincipal() == null) {
-            // Si no hay usuario autenticado, retornar todos los historiales
-            return repository.findAll().stream()
-                    .map(HistorialUsoMapper::toDto)
-                    .toList();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalArgumentException("No hay usuario autenticado");
         }
+        Usuario usuario = usuarioRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado con nombre de usuario: " + authentication.getName()));
 
-        // Si hay usuario autenticado, filtrar por el ID del usuario
-        Long usuarioId = ((Usuario) authentication.getPrincipal()).getId();
-        return repository.findByUsuarioId(usuarioId).stream()
+        return repository.findByUsuario(usuario).stream()
                 .map(HistorialUsoMapper::toDto)
                 .toList();
     }
