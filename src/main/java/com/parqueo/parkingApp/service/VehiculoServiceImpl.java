@@ -124,7 +124,8 @@ public class VehiculoServiceImpl implements VehiculoService {
             throw new IllegalArgumentException("El ID del usuario no puede ser null");
         }
         
-        return vehiculoRepo.findByUsuarioId(usuarioId).stream()
+        // Por defecto solo retornar vehículos activos
+        return vehiculoRepo.findByUsuarioIdAndActivo(usuarioId, true).stream()
                 .map(VehiculoMapper::toDto)
                 .toList();
     }
@@ -135,7 +136,25 @@ public class VehiculoServiceImpl implements VehiculoService {
             throw new IllegalArgumentException("El tipo de vehículo no puede ser null");
         }
         
-        return vehiculoRepo.findByTipo(tipo).stream()
+        return vehiculoRepo.findByTipoAndActivo(tipo, true).stream()
+                .map(VehiculoMapper::toDto)
+                .toList();
+    }
+    
+    /**
+     * Obtiene todos los vehículos (activos e inactivos) - para administradores
+     */
+    public List<VehiculoDto> obtenerTodosIncluyendoInactivos() {
+        return vehiculoRepo.findAll().stream()
+                .map(VehiculoMapper::toDto)
+                .toList();
+    }
+    
+    /**
+     * Obtiene solo vehículos activos
+     */
+    public List<VehiculoDto> obtenerSoloActivos() {
+        return vehiculoRepo.findAllActivos().stream()
                 .map(VehiculoMapper::toDto)
                 .toList();
     }

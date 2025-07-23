@@ -67,13 +67,38 @@ public class VehiculoController {
     }
 
     @GetMapping("/tipo/{tipo}")
-    @PreAuthorize("hasAuthority('VEHICULO_BUSCAR_POR_TIPO')")
-    public ResponseEntity<List<VehiculoDto>> buscarPorTipo(@PathVariable Vehiculo.TipoVehiculo tipo) {
+    @PreAuthorize("hasAuthority('VEHICULO_LEER')")
+    public ResponseEntity<List<VehiculoDto>> buscarPorTipo(@PathVariable String tipo) {
         try {
-            List<VehiculoDto> vehiculos = vehiculoService.buscarPorTipo(tipo);
+            Vehiculo.TipoVehiculo tipoVehiculo = Vehiculo.TipoVehiculo.valueOf(tipo.toUpperCase());
+            List<VehiculoDto> vehiculos = vehiculoService.buscarPorTipo(tipoVehiculo);
             return ResponseEntity.ok(vehiculos);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/activos")
+    @PreAuthorize("hasAuthority('VEHICULO_LEER')")
+    public ResponseEntity<List<VehiculoDto>> obtenerSoloActivos() {
+        try {
+            List<VehiculoDto> vehiculos = vehiculoService.obtenerSoloActivos();
+            return ResponseEntity.ok(vehiculos);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/todos")
+    @PreAuthorize("hasAuthority('VEHICULO_LEER')")
+    public ResponseEntity<List<VehiculoDto>> obtenerTodosIncluyendoInactivos() {
+        try {
+            List<VehiculoDto> vehiculos = vehiculoService.obtenerTodosIncluyendoInactivos();
+            return ResponseEntity.ok(vehiculos);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

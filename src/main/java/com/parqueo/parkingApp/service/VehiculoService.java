@@ -14,5 +14,9 @@ public interface VehiculoService {
     Optional<VehiculoDto> buscarPorPlaca(String placa);
     List<VehiculoDto> buscarPorUsuario(Long usuarioId);
     List<VehiculoDto> buscarPorTipo(Vehiculo.TipoVehiculo tipo);
+    
+    // Nuevos métodos para manejar vehículos activos/inactivos
+    List<VehiculoDto> obtenerSoloActivos();
+    List<VehiculoDto> obtenerTodosIncluyendoInactivos();
 }
 

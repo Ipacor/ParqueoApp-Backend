@@ -7,13 +7,13 @@ import com.parqueo.parkingApp.model.Rol;
 import com.parqueo.parkingApp.model.Vehiculo;
 import com.parqueo.parkingApp.model.Sancion;
 import com.parqueo.parkingApp.repository.UsuarioRepository;
-import com.parqueo.parkingApp.repository.ReservaRepository;
+import com.parqueo.parkingApp.repository.RolRepository;
 import com.parqueo.parkingApp.repository.VehiculoRepository;
+import com.parqueo.parkingApp.repository.ReservaRepository;
 import com.parqueo.parkingApp.repository.SancionRepository;
 import com.parqueo.parkingApp.repository.HistorialUsoRepository;
 import com.parqueo.parkingApp.repository.EscaneoQRRepository;
 import com.parqueo.parkingApp.repository.SancionDetalleRepository;
-import com.parqueo.parkingApp.repository.RolRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -141,8 +141,19 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (adminRol.equals(usuario.getRol()) && usuarioRepository.countByRol(adminRol) == 1) {
             throw new RuntimeException("No se puede desactivar el único administrador del sistema.");
         }
+        
+        // Desactivar el usuario
         usuario.setActivo(false);
         usuarioRepository.save(usuario);
+        
+        // Desactivar todos los vehículos asociados al usuario
+        List<Vehiculo> vehiculosUsuario = vehiculoRepository.findByUsuarioId(id);
+        for (Vehiculo vehiculo : vehiculosUsuario) {
+            vehiculo.setActivo(false);
+            vehiculoRepository.save(vehiculo);
+        }
+        
+        System.out.println("Usuario " + id + " desactivado junto con " + vehiculosUsuario.size() + " vehículos");
     }
 
     /**
@@ -154,8 +165,19 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado con ID " + id));
+        
+        // Activar el usuario
         usuario.setActivo(true);
         usuarioRepository.save(usuario);
+        
+        // Activar todos los vehículos asociados al usuario
+        List<Vehiculo> vehiculosUsuario = vehiculoRepository.findByUsuarioId(id);
+        for (Vehiculo vehiculo : vehiculosUsuario) {
+            vehiculo.setActivo(true);
+            vehiculoRepository.save(vehiculo);
+        }
+        
+        System.out.println("Usuario " + id + " activado junto con " + vehiculosUsuario.size() + " vehículos");
     }
 
     /**
