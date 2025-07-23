@@ -250,9 +250,9 @@ public class SancionServiceImpl implements SancionService {
                     inicioSusp = LocalDateTime.now();
                     finSusp = inicioSusp.plusWeeks(1);
                 } else if (reincidencias >= 3) {
-                    tipoCastigo = "Suspensión ciclo lectivo";
+                    tipoCastigo = "Suspensión 1 mes";
                     inicioSusp = LocalDateTime.now();
-                    finSusp = inicioSusp.plusMonths(6); // Ajusta según duración real del ciclo
+                    finSusp = inicioSusp.plusMonths(1);
                 }
             } else if (tipoFalta == ReglasEstacionamiento.TipoFalta.GRAVE) {
                 if (reincidencias == 0) {
@@ -262,9 +262,9 @@ public class SancionServiceImpl implements SancionService {
                     inicioSusp = LocalDateTime.now();
                     finSusp = inicioSusp.plusWeeks(1);
                 } else if (reincidencias >= 2) {
-                    tipoCastigo = "Suspensión ciclo lectivo";
+                    tipoCastigo = "Suspensión 1 mes";
                     inicioSusp = LocalDateTime.now();
-                    finSusp = inicioSusp.plusMonths(6); // Ajusta según duración real del ciclo
+                    finSusp = inicioSusp.plusMonths(1);
                 }
             }
             nueva.setTipoCastigo(tipoCastigo);

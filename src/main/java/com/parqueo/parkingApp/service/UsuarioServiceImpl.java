@@ -238,7 +238,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     public List<UsuarioDto> obtenerUsuariosSuspendidos() {
-        // Busca usuarios con sanción activa de suspensión (temporal o ciclo lectivo)
+        // Busca usuarios con sanción activa de suspensión (temporal o 1 mes)
         List<Usuario> suspendidos = usuarioRepository.findUsuariosSuspendidos("suspensión");
         return suspendidos.stream().map(UsuarioMapper::toDto).toList();
     }
