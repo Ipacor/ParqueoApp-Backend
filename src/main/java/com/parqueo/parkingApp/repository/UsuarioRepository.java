@@ -32,4 +32,10 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     @org.springframework.data.jpa.repository.Query("SELECT DISTINCT u FROM Usuario u JOIN u.sanciones s WHERE s.estado = com.parqueo.parkingApp.model.Sancion.EstadoSancion.ACTIVA")
     List<Usuario> findUsuariosConSancionActiva();
+    
+    // Métodos para estadísticas del dashboard
+    long countByActivoTrue();
+    
+    @Query("SELECT COUNT(u) FROM Usuario u WHERE u.rol.nombre = :rol")
+    long countByRolNombre(@Param("rol") String rol);
 }

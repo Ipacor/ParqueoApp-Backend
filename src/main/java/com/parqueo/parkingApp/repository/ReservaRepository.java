@@ -20,4 +20,13 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     
     @Query("SELECT r FROM Reserva r LEFT JOIN FETCH r.espacio LEFT JOIN FETCH r.usuario LEFT JOIN FETCH r.vehiculo WHERE r.estado = :estado")
     List<Reserva> findByEstadoWithRelations(@Param("estado") Reserva.EstadoReserva estado);
+    
+    // Métodos para estadísticas del dashboard
+    long countByEstado(Reserva.EstadoReserva estado);
+    
+    @Query("SELECT COUNT(r) FROM Reserva r WHERE DATE(r.fechaHoraInicio) = :fecha")
+    long countByFechaReserva(@Param("fecha") java.time.LocalDate fecha);
+    
+    @Query("SELECT COUNT(r) FROM Reserva r WHERE DATE(r.fechaHoraInicio) BETWEEN :fechaInicio AND :fechaFin")
+    long countByFechaReservaBetween(@Param("fechaInicio") java.time.LocalDate fechaInicio, @Param("fechaFin") java.time.LocalDate fechaFin);
 }

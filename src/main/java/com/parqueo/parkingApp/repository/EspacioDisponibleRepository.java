@@ -9,4 +9,7 @@ public interface EspacioDisponibleRepository extends JpaRepository<EspacioDispon
     boolean existsByUbicacion(String ubicacion);
     List<EspacioDisponible> findByEstado(EspacioDisponible.EstadoEspacio estado);
     List<EspacioDisponible> findByZona(String zona);
+    
+    // Métodos para estadísticas del dashboard
+    long countByEstado(EspacioDisponible.EstadoEspacio estado);
 }
