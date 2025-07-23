@@ -160,23 +160,7 @@ public class EscaneoQRServiceImpl implements EscaneoQRService {
         EscaneoQR escaneo = escaneoRepo.findByReserva(reserva)
                 .orElseThrow(() -> new EntityNotFoundException("Escaneo no encontrado para esta reserva"));
 
-        // Forzar recarga del objeto desde la base de datos
-        escaneo = escaneoRepo.findById(escaneo.getId()).orElse(escaneo);
-
-        // Depuración: imprimir el token en consola
-        System.out.println("TOKEN ENCONTRADO: " + escaneo.getToken());
-
-        // --- Mapeo manual para asegurar que el token se incluya ---
-        EscaneoQRDto dto = new EscaneoQRDto();
-        dto.setId(escaneo.getId());
-        dto.setReservaId(escaneo.getReserva().getId());
-        dto.setTimestampEnt(escaneo.getTimestampEnt());
-        dto.setTimestampSal(escaneo.getTimestampSal());
-        dto.setToken(escaneo.getToken());
-        dto.setTipo(escaneo.getTipo());
-        dto.setFechaExpiracion(escaneo.getFechaExpiracion());
-        dto.setFechaInicioValidez(escaneo.getFechaInicioValidez());
-        return dto;
+        return EscaneoQRMapper.toDto(escaneo);
     }
 
     @Override
@@ -200,6 +184,7 @@ public class EscaneoQRServiceImpl implements EscaneoQRService {
             throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de fin");
         }
         
+        // Implementar búsqueda por fecha usando una consulta personalizada
         return escaneoRepo.findByTimestampEntBetween(fechaInicio, fechaFin).stream()
                 .map(EscaneoQRMapper::toDto)
                 .toList();

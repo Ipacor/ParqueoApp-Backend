@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -255,7 +256,9 @@ public class ReservaServiceImpl implements ReservaService {
     }
 
     // Lógica para liberar espacios cuando el QR de entrada expira o pasan 20 minutos sin escaneo
+    @Override
     @Scheduled(fixedRate = 30000) // cada 30 segundos
+    @Transactional
     public void liberarEspaciosReservadosExpirados() {
         System.out.println("=== EJECUTANDO JOB DE EXPIRACIÓN - " + LocalDateTime.now() + " ===");
         
@@ -311,7 +314,8 @@ public class ReservaServiceImpl implements ReservaService {
         }
         
         // SEGUNDA LÓGICA: Verificar QRs expirados (para reservas que aún no han expirado por fecha)
-        List<EscaneoQR> escaneos = escaneoQRRepo.findAll();
+        // Usar una consulta más eficiente que cargue las relaciones necesarias
+        List<EscaneoQR> escaneos = escaneoQRRepo.findAllWithReservaAndEspacio();
         System.out.println("Procesando " + escaneos.size() + " escaneos QR");
         
         for (EscaneoQR escaneo : escaneos) {
