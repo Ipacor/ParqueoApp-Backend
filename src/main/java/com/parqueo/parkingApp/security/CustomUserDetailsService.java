@@ -53,7 +53,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         }
         
         if (suspendido) {
-            // Permitir login solo si tiene reservas activas o expiradas
+            // Solo si está suspendido, aplicar la restricción de reservas pendientes
             boolean tieneReservasPendientes = reservaRepository.findByUsuarioId(usuario.getId()).stream()
                 .anyMatch(r -> r.getEstado() == com.parqueo.parkingApp.model.Reserva.EstadoReserva.ACTIVO ||
                               r.getEstado() == com.parqueo.parkingApp.model.Reserva.EstadoReserva.EXPIRADO);
@@ -73,6 +73,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             }
             // Si tiene reservas activas/expiradas, permitir login pero limitar permisos en el frontend
         }
+        // Usuarios NO suspendidos pueden ingresar siempre
 
         // Crear autoridades basadas en el rol y sus permisos
         List<SimpleGrantedAuthority> authorities = usuario.getRol().getPermisos().stream()
