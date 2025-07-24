@@ -26,12 +26,24 @@ public class GlobalExceptionHandler {
 
     // Otras validaciones, opcional
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<String> handleConstraintViolation(ConstraintViolationException ex) {
-        return ResponseEntity.badRequest().body(ex.getMessage());
+    public ResponseEntity<Map<String, String>> handleConstraintViolation(ConstraintViolationException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("message", ex.getMessage());
+        return ResponseEntity.badRequest().body(error);
     }
 
     @ExceptionHandler(LockedException.class)
-    public ResponseEntity<String> handleLockedException(LockedException ex) {
-        return ResponseEntity.status(423).body(ex.getMessage());
+    public ResponseEntity<Map<String, String>> handleLockedException(LockedException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("message", ex.getMessage());
+        return ResponseEntity.status(423).body(error);
+    }
+
+    // Manejar excepciones generales
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleGeneralException(Exception ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("message", "Error interno del servidor: " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }
