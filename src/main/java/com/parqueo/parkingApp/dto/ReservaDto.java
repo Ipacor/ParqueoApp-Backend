@@ -36,4 +36,10 @@ public class ReservaDto {
     private EstadoReserva estado;
 
     private String motivoCancelacion;
+    
+    // Campos para información del QR
+    private String qrToken;
+    private String qrTipo;
+    private LocalDateTime qrFechaExpiracion;
+    private LocalDateTime qrFechaInicioValidez;
 }

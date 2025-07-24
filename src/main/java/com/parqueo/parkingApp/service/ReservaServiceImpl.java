@@ -65,6 +65,19 @@ public class ReservaServiceImpl implements ReservaService {
         
         Reserva reserva = reservaRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Reserva no encontrada con ID: " + id));
+        
+        // Cargar el QR asociado a la reserva
+        try {
+            EscaneoQR escaneoQR = escaneoQRRepo.findByReserva(reserva)
+                    .orElse(null);
+            if (escaneoQR != null) {
+                reserva.setEscaneoQR(escaneoQR);
+            }
+        } catch (Exception e) {
+            // Si no se puede cargar el QR, continuar sin él
+            System.err.println("No se pudo cargar el QR para la reserva " + id + ": " + e.getMessage());
+        }
+        
         return ReservaMapper.toDto(reserva);
     }
 
@@ -109,6 +122,9 @@ public class ReservaServiceImpl implements ReservaService {
                 dto.getFechaHoraFin().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
         
         notificacionService.crearNotificacion(usuario, tituloNotificacion, mensajeNotificacion, Notificacion.TipoNotificacion.RESERVA_CREADA);
+        
+        // Cargar el QR para incluirlo en la respuesta
+        guardada.setEscaneoQR(escaneoQR);
         
         return ReservaMapper.toDto(guardada);
     }

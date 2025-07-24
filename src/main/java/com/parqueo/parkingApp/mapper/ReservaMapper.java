@@ -12,7 +12,7 @@ public class ReservaMapper {
             return null;
         }
 
-        return ReservaDto.builder()
+        ReservaDto.ReservaDtoBuilder builder = ReservaDto.builder()
                 .id(reserva.getId())
                 .fechaHoraInicio(reserva.getFechaHoraInicio())
                 .fechaHoraFin(reserva.getFechaHoraFin())
@@ -20,8 +20,17 @@ public class ReservaMapper {
                 .motivoCancelacion(reserva.getMotivoCancelacion())
                 .usuarioId(reserva.getUsuario() != null ? reserva.getUsuario().getId() : null)
                 .vehiculoId(reserva.getVehiculo() != null ? reserva.getVehiculo().getId() : null)
-                .espacioId(reserva.getEspacio() != null ? reserva.getEspacio().getId() : null)
-                .build();
+                .espacioId(reserva.getEspacio() != null ? reserva.getEspacio().getId() : null);
+
+        // Incluir información del QR si existe
+        if (reserva.getEscaneoQR() != null) {
+            builder.qrToken(reserva.getEscaneoQR().getToken())
+                   .qrTipo(reserva.getEscaneoQR().getTipo())
+                   .qrFechaExpiracion(reserva.getEscaneoQR().getFechaExpiracion())
+                   .qrFechaInicioValidez(reserva.getEscaneoQR().getFechaInicioValidez());
+        }
+
+        return builder.build();
     }
 
     public static Reserva toEntity(ReservaDto reservaDto) {
