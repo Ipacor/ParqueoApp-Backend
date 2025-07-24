@@ -276,12 +276,33 @@ public class SancionServiceImpl implements SancionService {
         Sancion guardada = repository.save(nueva);
         historialUsoService.registrarEvento(guardada.getUsuario(), HistorialUso.AccionHistorial.SANCION);
 
-        // Crear notificación de sanción aplicada
-        String tituloNotificacion = "Sanción Aplicada";
-        String mensajeNotificacion = String.format("Se ha aplicado una sanción por: %s. Motivo: %s", 
-                guardada.getTipoCastigo() != null ? guardada.getTipoCastigo() : "Infracción",
-                guardada.getMotivo());
-        notificacionService.crearNotificacion(guardada.getUsuario(), tituloNotificacion, mensajeNotificacion, Notificacion.TipoNotificacion.SANCION);
+        // Crear notificación de sanción aplicada con mensaje más claro
+        String tituloNotificacion = "🚨 Sanción Aplicada";
+        String mensajeNotificacion;
+        
+        if (guardada.getTipoCastigo() != null && guardada.getTipoCastigo().toLowerCase().contains("suspensión")) {
+            // Mensaje específico para suspensiones
+            String duracionSuspension = "";
+            if (guardada.getFechaInicioSuspension() != null && guardada.getFechaFinSuspension() != null) {
+                long dias = java.time.Duration.between(guardada.getFechaInicioSuspension(), guardada.getFechaFinSuspension()).toDays();
+                duracionSuspension = String.format("Tu cuenta ha sido suspendida por %d días", dias);
+            }
+            
+            mensajeNotificacion = String.format("Se ha aplicado una sanción por exceder el tiempo de reserva #%d. %s. " +
+                    "Espacio: %s, Motivo: %s. " +
+                    "Durante la suspensión no podrás acceder al sistema de reservas.", 
+                    guardada.getId(),
+                    duracionSuspension,
+                    guardada.getVehiculo() != null ? guardada.getVehiculo().getPlaca() : "N/A",
+                    guardada.getMotivo());
+        } else {
+            // Mensaje para otros tipos de sanción
+            mensajeNotificacion = String.format("Se ha aplicado una sanción por: %s. Motivo: %s", 
+                    guardada.getTipoCastigo() != null ? guardada.getTipoCastigo() : "Infracción",
+                    guardada.getMotivo());
+        }
+        
+        notificacionService.crearNotificacion(guardada.getUsuario(), tituloNotificacion, mensajeNotificacion, Notificacion.TipoNotificacion.SANCION_APLICADA);
 
         // Lógica de activar/inactivar usuario según sanciones de suspensión
         actualizarEstadoUsuarioPorSanciones(guardada.getUsuario());
@@ -299,32 +320,45 @@ public class SancionServiceImpl implements SancionService {
         boolean tieneSuspensionActiva = sanciones.stream().anyMatch(s ->
             s.getEstado() == Sancion.EstadoSancion.ACTIVA &&
             s.getTipoCastigo() != null &&
-            s.getTipoCastigo().toLowerCase().contains("suspensión")
+            s.getTipoCastigo().toLowerCase().contains("suspensión") &&
+            s.getFechaInicioSuspension() != null &&
+            s.getFechaFinSuspension() != null &&
+            LocalDateTime.now().isAfter(s.getFechaInicioSuspension()) &&
+            LocalDateTime.now().isBefore(s.getFechaFinSuspension())
         );
+        
         if (tieneSuspensionActiva) {
+            // SUSPENDER USUARIO
             if (Boolean.TRUE.equals(usuario.getActivo())) {
                 usuario.setActivo(false);
                 usuarioRepository.save(usuario);
+                System.out.println("Usuario " + usuario.getUsername() + " SUSPENDIDO por sanción activa");
             }
+            
             // Desactivar todos los vehículos asociados
             List<com.parqueo.parkingApp.model.Vehiculo> vehiculosUsuario = vehiculoRepository.findByUsuarioId(usuario.getId());
             for (com.parqueo.parkingApp.model.Vehiculo vehiculo : vehiculosUsuario) {
                 if (Boolean.TRUE.equals(vehiculo.getActivo())) {
                     vehiculo.setActivo(false);
                     vehiculoRepository.save(vehiculo);
+                    System.out.println("Vehículo " + vehiculo.getPlaca() + " DESACTIVADO por suspensión del usuario");
                 }
             }
         } else {
+            // ACTIVAR USUARIO (si no tiene suspensiones activas)
             if (!Boolean.TRUE.equals(usuario.getActivo())) {
                 usuario.setActivo(true);
                 usuarioRepository.save(usuario);
+                System.out.println("Usuario " + usuario.getUsername() + " ACTIVADO - sin suspensiones activas");
             }
+            
             // Activar todos los vehículos asociados
             List<com.parqueo.parkingApp.model.Vehiculo> vehiculosUsuario = vehiculoRepository.findByUsuarioId(usuario.getId());
             for (com.parqueo.parkingApp.model.Vehiculo vehiculo : vehiculosUsuario) {
                 if (!Boolean.TRUE.equals(vehiculo.getActivo())) {
                     vehiculo.setActivo(true);
                     vehiculoRepository.save(vehiculo);
+                    System.out.println("Vehículo " + vehiculo.getPlaca() + " ACTIVADO - usuario sin suspensiones");
                 }
             }
         }

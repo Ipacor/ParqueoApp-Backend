@@ -29,10 +29,12 @@ public class CustomUserDetailsService implements UserDetailsService {
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
 
-        // Lógica de suspensión total
+        // Lógica de suspensión total mejorada
         List<Sancion> sanciones = sancionRepository.findByUsuarioId(usuario.getId());
         boolean suspendido = false;
         LocalDateTime fechaFinSuspension = null;
+        String tipoSuspension = "";
+        
         for (Sancion s : sanciones) {
             if (s.getTipoCastigo() != null &&
                 s.getTipoCastigo().toLowerCase().contains("suspensión") &&
@@ -43,14 +45,26 @@ public class CustomUserDetailsService implements UserDetailsService {
                 LocalDateTime.now().isBefore(s.getFechaFinSuspension())) {
                 suspendido = true;
                 fechaFinSuspension = s.getFechaFinSuspension();
+                tipoSuspension = s.getTipoCastigo();
                 break;
             }
         }
+        
         if (suspendido) {
-            String mensaje = "Usuario suspendido. No puede acceder hasta que finalice la suspensión.";
+            String mensaje = String.format("🚫 ACCESO DENEGADO: Tu cuenta está suspendida por '%s'. " +
+                    "No puedes acceder al sistema hasta que finalice la suspensión.", tipoSuspension);
+            
             if (fechaFinSuspension != null) {
-                mensaje += "|" + fechaFinSuspension.toString();
+                long diasRestantes = java.time.Duration.between(LocalDateTime.now(), fechaFinSuspension).toDays();
+                long horasRestantes = java.time.Duration.between(LocalDateTime.now(), fechaFinSuspension).toHours() % 24;
+                
+                if (diasRestantes > 0) {
+                    mensaje += String.format(" Tiempo restante: %d días y %d horas.", diasRestantes, horasRestantes);
+                } else {
+                    mensaje += String.format(" Tiempo restante: %d horas.", horasRestantes);
+                }
             }
+            
             throw new LockedException(mensaje);
         }
 

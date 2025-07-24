@@ -23,5 +23,6 @@ public interface ReservaService {
     // Métodos para tareas programadas
     void expirarReservasAutomaticamente();
     void crearRecordatoriosAutomaticos();
+    void aplicarSancionesAutomaticas();
 }
 

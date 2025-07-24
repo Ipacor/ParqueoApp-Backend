@@ -14,6 +14,10 @@ import com.parqueo.parkingApp.repository.UsuarioRepository;
 import com.parqueo.parkingApp.repository.VehiculoRepository;
 import com.parqueo.parkingApp.repository.EspacioDisponibleRepository;
 import com.parqueo.parkingApp.repository.EscaneoQRRepository;
+import com.parqueo.parkingApp.repository.SancionRepository;
+import com.parqueo.parkingApp.service.SancionService;
+import com.parqueo.parkingApp.dto.SancionDto;
+import com.parqueo.parkingApp.model.Sancion;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -41,6 +45,10 @@ public class ReservaServiceImpl implements ReservaService {
     
     @Autowired
     private NotificacionService notificacionService;
+    @Autowired
+    private SancionRepository sancionRepository;
+    @Autowired
+    private SancionService sancionService;
 
     @Override
     public List<ReservaDto> obtenerTodos() {
@@ -521,11 +529,53 @@ public class ReservaServiceImpl implements ReservaService {
             }
         }
     }
+    
+    /**
+     * Método programado para aplicar sanciones automáticas por reservas expiradas
+     * Se ejecuta cada 10 minutos
+     */
+    @Override
+    @Scheduled(fixedRate = 600000) // Cada 10 minutos
+    public void aplicarSancionesAutomaticas() {
+        LocalDateTime ahora = LocalDateTime.now();
+        List<Reserva> reservasExpiradas = reservaRepo.findByEstadoWithRelations(Reserva.EstadoReserva.EXPIRADO);
+        
+        for (Reserva reserva : reservasExpiradas) {
+            // Verificar si ya se aplicó una sanción para esta reserva
+            boolean yaTieneSancion = sancionRepository.findByUsuarioId(reserva.getUsuario().getId()).stream()
+                .anyMatch(s -> s.getMotivo() != null && s.getMotivo().contains("Reserva #" + reserva.getId()));
+            
+            if (!yaTieneSancion) {
+                // Aplicar sanción automática
+                try {
+                    // Crear DTO de sanción
+                    SancionDto sancionDto = new SancionDto();
+                    sancionDto.setUsuarioId(reserva.getUsuario().getId());
+                    sancionDto.setVehiculoId(reserva.getVehiculo().getId());
+                    sancionDto.setMotivo("Exceder tiempo de reserva - Reserva #" + reserva.getId() + 
+                        " expirada sin registrar salida. Espacio: " + reserva.getEspacio().getNumeroEspacio());
+                    sancionDto.setEstado(Sancion.EstadoSancion.ACTIVA);
+                    sancionDto.setRegistroSancion(ahora);
+                    sancionDto.setReglaId(1L); // ID de regla por defecto para exceder tiempo
+                    
+                    // Crear sanción usando el servicio
+                    sancionService.crearConRegistrador(sancionDto, null); // null para sistema automático
+                    
+                    System.out.println("Sanción automática aplicada para reserva #" + reserva.getId() + 
+                        " - Usuario: " + reserva.getUsuario().getUsername());
+                        
+                } catch (Exception e) {
+                    System.err.println("Error al aplicar sanción automática para reserva #" + reserva.getId() + ": " + e.getMessage());
+                }
+            }
+        }
+    }
 
     @Override
     @Scheduled(fixedRate = 600000) // Cada 10 minutos
     public void crearRecordatoriosAutomaticos() {
         LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime en20Minutos = ahora.plusMinutes(20);
         LocalDateTime en30Minutos = ahora.plusMinutes(30);
         LocalDateTime en1Hora = ahora.plusHours(1);
         
@@ -534,8 +584,23 @@ public class ReservaServiceImpl implements ReservaService {
         for (Reserva reserva : reservasActivas) {
             LocalDateTime fechaFin = reserva.getFechaHoraFin();
             
+            // Recordatorio 20 minutos antes de expirar (NUEVO - para sanciones)
+            if (fechaFin != null && fechaFin.isAfter(ahora) && fechaFin.isBefore(en20Minutos)) {
+                String mensajeSancion = "⚠️ ATENCIÓN: Tu reserva #" + reserva.getId() + " expira en menos de 20 minutos. " +
+                    "Si no registras tu salida a tiempo, se aplicará una sanción automática. " +
+                    "Espacio: " + reserva.getEspacio().getNumeroEspacio() + 
+                    ", Expira: " + fechaFin.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+                
+                notificacionService.crearNotificacion(
+                    reserva.getUsuario(),
+                    "🚨 Advertencia: Sanción Inminente",
+                    mensajeSancion,
+                    com.parqueo.parkingApp.model.Notificacion.TipoNotificacion.RECORDATORIO_EXPIRACION
+                );
+            }
+            
             // Recordatorio 30 minutos antes de expirar
-            if (fechaFin != null && fechaFin.isAfter(ahora) && fechaFin.isBefore(en30Minutos)) {
+            if (fechaFin != null && fechaFin.isAfter(en20Minutos) && fechaFin.isBefore(en30Minutos)) {
                 notificacionService.crearNotificacion(
                     reserva.getUsuario(),
                     "Recordatorio: Reserva Expira Pronto",
