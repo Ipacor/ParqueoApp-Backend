@@ -54,18 +54,32 @@ public class UsuarioController {
 
     @PostMapping("/registro")
     public ResponseEntity<?> registroPublico(@Valid @RequestBody UsuarioDto usuarioDto) {
+        System.out.println("=== REGISTRO PÚBLICO ===");
+        System.out.println("Usuario recibido: " + usuarioDto);
+        System.out.println("Rol: " + usuarioDto.getRolNombre());
+        System.out.println("RolId: " + usuarioDto.getRolId());
+        
         try {
             // Validar que el rol sea uno de los permitidos para registro público
             String rol = usuarioDto.getRolNombre() != null ? usuarioDto.getRolNombre() : "";
+            System.out.println("Rol validado: " + rol);
+            
             if (!rol.equals("ESTUDIANTE") && !rol.equals("DOCENTE") && !rol.equals("PROVEEDOR_SERVICIO")) {
+                System.out.println("Rol no permitido: " + rol);
                 return ResponseEntity.badRequest().body("Solo se permiten registros para ESTUDIANTE, DOCENTE y PROVEEDOR_SERVICIO");
             }
             
+            System.out.println("Creando usuario...");
             UsuarioDto creado = usuarioService.crear(usuarioDto);
+            System.out.println("Usuario creado exitosamente: " + creado);
             return ResponseEntity.status(HttpStatus.CREATED).body(creado);
         } catch (RuntimeException e) {
+            System.out.println("RuntimeException: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
+            System.out.println("Exception: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor");
         }
     }
