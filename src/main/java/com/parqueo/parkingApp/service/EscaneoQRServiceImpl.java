@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.parqueo.parkingApp.dto.EscaneoQRDto;
 import com.parqueo.parkingApp.mapper.EscaneoQRMapper;
@@ -25,6 +26,12 @@ public class EscaneoQRServiceImpl implements EscaneoQRService {
     private final ReservaRepository reservaRepo;
     private final EscaneoQRMapper mapper;
     private final EspacioDisponibleRepository espacioRepo;
+    
+    @Autowired
+    private HistorialUsoService historialUsoService;
+    
+    @Autowired
+    private NotificacionService notificacionService;
 
     @Override
     public List<EscaneoQRDto> obtenerTodos() {
@@ -144,6 +151,23 @@ public class EscaneoQRServiceImpl implements EscaneoQRService {
         if (reserva.getEspacio() != null) {
             reserva.getEspacio().setEstado(com.parqueo.parkingApp.model.EspacioDisponible.EstadoEspacio.DISPONIBLE);
             espacioRepo.save(reserva.getEspacio());
+        }
+
+        // Registrar evento de salida en el historial
+        if (reserva.getUsuario() != null && reserva.getEspacio() != null && reserva.getVehiculo() != null) {
+            // Usar el historialUsoService si está disponible
+            try {
+                historialUsoService.registrarEvento(reserva.getUsuario(), reserva.getEspacio(), reserva, reserva.getVehiculo(), com.parqueo.parkingApp.model.HistorialUso.AccionHistorial.SALIDA);
+            } catch (Exception e) {
+                System.err.println("No se pudo registrar el evento de salida en el historial: " + e.getMessage());
+            }
+        }
+
+        // Notificar al usuario que el espacio ha sido liberado
+        try {
+            notificacionService.crearNotificacion(reserva.getUsuario(), "Salida Registrada", String.format("Has salido del espacio %s. Tu reserva #%d ha finalizado y el espacio ha sido liberado.", reserva.getEspacio().getNumeroEspacio(), reserva.getId()), com.parqueo.parkingApp.model.Notificacion.TipoNotificacion.SALIDA_REGISTRADA);
+        } catch (Exception e) {
+            System.err.println("No se pudo notificar al usuario sobre la salida: " + e.getMessage());
         }
 
         return EscaneoQRMapper.toDto(qrSalida);
