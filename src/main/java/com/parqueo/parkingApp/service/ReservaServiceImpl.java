@@ -52,7 +52,25 @@ public class ReservaServiceImpl implements ReservaService {
 
     @Override
     public List<ReservaDto> obtenerTodos() {
-        return reservaRepo.findAll().stream()
+        // Obtener todas las reservas
+        List<Reserva> reservas = reservaRepo.findAll();
+        
+        // Cargar los QRs asociados a cada reserva
+        for (Reserva reserva : reservas) {
+            try {
+                EscaneoQR escaneoQR = escaneoQRRepo.findByReserva(reserva)
+                        .orElse(null);
+                if (escaneoQR != null) {
+                    reserva.setEscaneoQR(escaneoQR);
+                }
+            } catch (Exception e) {
+                // Si no se puede cargar el QR, continuar sin él
+                System.err.println("No se pudo cargar el QR para la reserva " + reserva.getId() + ": " + e.getMessage());
+            }
+        }
+        
+        // Mapear a DTOs incluyendo la información del QR
+        return reservas.stream()
                 .map(ReservaMapper::toDto)
                 .toList();
     }
@@ -245,8 +263,26 @@ public class ReservaServiceImpl implements ReservaService {
         if (usuarioId == null) {
             throw new IllegalArgumentException("El ID del usuario no puede ser null");
         }
-        // Incluir todas las reservas del usuario, incluyendo las expiradas
-        return reservaRepo.findByUsuarioId(usuarioId).stream()
+        
+        // Obtener todas las reservas del usuario
+        List<Reserva> reservas = reservaRepo.findByUsuarioId(usuarioId);
+        
+        // Cargar los QRs asociados a cada reserva
+        for (Reserva reserva : reservas) {
+            try {
+                EscaneoQR escaneoQR = escaneoQRRepo.findByReserva(reserva)
+                        .orElse(null);
+                if (escaneoQR != null) {
+                    reserva.setEscaneoQR(escaneoQR);
+                }
+            } catch (Exception e) {
+                // Si no se puede cargar el QR, continuar sin él
+                System.err.println("No se pudo cargar el QR para la reserva " + reserva.getId() + ": " + e.getMessage());
+            }
+        }
+        
+        // Mapear a DTOs incluyendo la información del QR
+        return reservas.stream()
                 .map(ReservaMapper::toDto)
                 .toList();
     }
@@ -257,7 +293,25 @@ public class ReservaServiceImpl implements ReservaService {
             throw new IllegalArgumentException("El ID del vehículo no puede ser null");
         }
         
-        return reservaRepo.findByVehiculoId(vehiculoId).stream()
+        // Obtener todas las reservas del vehículo
+        List<Reserva> reservas = reservaRepo.findByVehiculoId(vehiculoId);
+        
+        // Cargar los QRs asociados a cada reserva
+        for (Reserva reserva : reservas) {
+            try {
+                EscaneoQR escaneoQR = escaneoQRRepo.findByReserva(reserva)
+                        .orElse(null);
+                if (escaneoQR != null) {
+                    reserva.setEscaneoQR(escaneoQR);
+                }
+            } catch (Exception e) {
+                // Si no se puede cargar el QR, continuar sin él
+                System.err.println("No se pudo cargar el QR para la reserva " + reserva.getId() + ": " + e.getMessage());
+            }
+        }
+        
+        // Mapear a DTOs incluyendo la información del QR
+        return reservas.stream()
                 .map(ReservaMapper::toDto)
                 .toList();
     }
@@ -268,7 +322,25 @@ public class ReservaServiceImpl implements ReservaService {
             throw new IllegalArgumentException("El ID del espacio no puede ser null");
         }
         
-        return reservaRepo.findByEspacioId(espacioId).stream()
+        // Obtener todas las reservas del espacio
+        List<Reserva> reservas = reservaRepo.findByEspacioId(espacioId);
+        
+        // Cargar los QRs asociados a cada reserva
+        for (Reserva reserva : reservas) {
+            try {
+                EscaneoQR escaneoQR = escaneoQRRepo.findByReserva(reserva)
+                        .orElse(null);
+                if (escaneoQR != null) {
+                    reserva.setEscaneoQR(escaneoQR);
+                }
+            } catch (Exception e) {
+                // Si no se puede cargar el QR, continuar sin él
+                System.err.println("No se pudo cargar el QR para la reserva " + reserva.getId() + ": " + e.getMessage());
+            }
+        }
+        
+        // Mapear a DTOs incluyendo la información del QR
+        return reservas.stream()
                 .map(ReservaMapper::toDto)
                 .toList();
     }
@@ -279,7 +351,25 @@ public class ReservaServiceImpl implements ReservaService {
             throw new IllegalArgumentException("El estado no puede ser null");
         }
         
-        return reservaRepo.findByEstado(estado).stream()
+        // Obtener todas las reservas del estado
+        List<Reserva> reservas = reservaRepo.findByEstado(estado);
+        
+        // Cargar los QRs asociados a cada reserva
+        for (Reserva reserva : reservas) {
+            try {
+                EscaneoQR escaneoQR = escaneoQRRepo.findByReserva(reserva)
+                        .orElse(null);
+                if (escaneoQR != null) {
+                    reserva.setEscaneoQR(escaneoQR);
+                }
+            } catch (Exception e) {
+                // Si no se puede cargar el QR, continuar sin él
+                System.err.println("No se pudo cargar el QR para la reserva " + reserva.getId() + ": " + e.getMessage());
+            }
+        }
+        
+        // Mapear a DTOs incluyendo la información del QR
+        return reservas.stream()
                 .map(ReservaMapper::toDto)
                 .toList();
     }
@@ -294,14 +384,50 @@ public class ReservaServiceImpl implements ReservaService {
             throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de fin");
         }
         
-        return reservaRepo.findByFechaHoraInicioBetween(fechaInicio, fechaFin).stream()
+        // Obtener todas las reservas en el rango de fechas
+        List<Reserva> reservas = reservaRepo.findByFechaHoraInicioBetween(fechaInicio, fechaFin);
+        
+        // Cargar los QRs asociados a cada reserva
+        for (Reserva reserva : reservas) {
+            try {
+                EscaneoQR escaneoQR = escaneoQRRepo.findByReserva(reserva)
+                        .orElse(null);
+                if (escaneoQR != null) {
+                    reserva.setEscaneoQR(escaneoQR);
+                }
+            } catch (Exception e) {
+                // Si no se puede cargar el QR, continuar sin él
+                System.err.println("No se pudo cargar el QR para la reserva " + reserva.getId() + ": " + e.getMessage());
+            }
+        }
+        
+        // Mapear a DTOs incluyendo la información del QR
+        return reservas.stream()
                 .map(ReservaMapper::toDto)
                 .toList();
     }
 
     @Override
     public List<ReservaDto> buscarReservasActivas() {
-        return reservaRepo.findReservasActivas(Reserva.EstadoReserva.ACTIVO, LocalDateTime.now()).stream()
+        // Obtener todas las reservas activas
+        List<Reserva> reservas = reservaRepo.findReservasActivas(Reserva.EstadoReserva.ACTIVO, LocalDateTime.now());
+        
+        // Cargar los QRs asociados a cada reserva
+        for (Reserva reserva : reservas) {
+            try {
+                EscaneoQR escaneoQR = escaneoQRRepo.findByReserva(reserva)
+                        .orElse(null);
+                if (escaneoQR != null) {
+                    reserva.setEscaneoQR(escaneoQR);
+                }
+            } catch (Exception e) {
+                // Si no se puede cargar el QR, continuar sin él
+                System.err.println("No se pudo cargar el QR para la reserva " + reserva.getId() + ": " + e.getMessage());
+            }
+        }
+        
+        // Mapear a DTOs incluyendo la información del QR
+        return reservas.stream()
                 .map(ReservaMapper::toDto)
                 .toList();
     }
