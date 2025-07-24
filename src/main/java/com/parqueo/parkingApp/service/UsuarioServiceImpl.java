@@ -53,27 +53,51 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     public UsuarioDto crear(UsuarioDto dto) {
-        validarDatosUsuario(dto);
-        if (usuarioRepository.existsByUsername(dto.getUsername())) {
-            throw new RuntimeException("El nombre de usuario ya está registrado.");
+        try {
+            System.out.println("=== CREANDO USUARIO ===");
+            System.out.println("DTO recibido: " + dto);
+            
+            validarDatosUsuario(dto);
+            
+            if (usuarioRepository.existsByUsername(dto.getUsername())) {
+                throw new RuntimeException("El nombre de usuario ya está registrado.");
+            }
+            if (usuarioRepository.existsByEmail(dto.getEmail())) {
+                throw new RuntimeException("El correo electrónico ya está registrado.");
+            }
+            
+            // Validación: solo puede existir un administrador
+            if ("ADMINISTRADOR".equalsIgnoreCase(dto.getRolNombre()) && usuarioRepository.existsByRol(rolRepository.findByNombre("ADMINISTRADOR").orElseThrow())) {
+                throw new RuntimeException("Ya existe un usuario administrador en el sistema. Solo puede haber un administrador.");
+            }
+            
+            // Crear la entidad Usuario
+            Usuario usuario = UsuarioMapper.toEntity(dto);
+            System.out.println("Entidad Usuario creada: " + usuario);
+            
+            // Encriptar la contraseña antes de guardar
+            usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
+            System.out.println("Contraseña encriptada");
+            
+            // Asignar el rol desde el repositorio
+            Rol rol = rolRepository.findById(dto.getRolId()).orElseThrow(() -> new RuntimeException("Rol no encontrado"));
+            usuario.setRol(rol);
+            System.out.println("Rol asignado: " + rol.getNombre());
+            
+            // Guardar el usuario
+            Usuario usuarioGuardado = usuarioRepository.save(usuario);
+            System.out.println("Usuario guardado con ID: " + usuarioGuardado.getId());
+            
+            // Recargar el usuario para obtener todas las relaciones
+            UsuarioDto resultado = UsuarioMapper.toDto(usuarioGuardado);
+            System.out.println("Usuario DTO creado: " + resultado);
+            
+            return resultado;
+        } catch (Exception e) {
+            System.out.println("Error en crear usuario: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
-        if (usuarioRepository.existsByEmail(dto.getEmail())) {
-            throw new RuntimeException("El correo electrónico ya está registrado.");
-        }
-        // Validación: solo puede existir un administrador
-        if ("ADMINISTRADOR".equalsIgnoreCase(dto.getRolNombre()) && usuarioRepository.existsByRol(rolRepository.findByNombre("ADMINISTRADOR").orElseThrow())) {
-            throw new RuntimeException("Ya existe un usuario administrador en el sistema. Solo puede haber un administrador.");
-        }
-        Usuario usuario = UsuarioMapper.toEntity(dto);
-        // Encriptar la contraseña antes de guardar
-        usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
-        // Asignar el rol desde el repositorio
-        Rol rol = rolRepository.findById(dto.getRolId()).orElseThrow(() -> new RuntimeException("Rol no encontrado"));
-        usuario.setRol(rol);
-        Usuario usuarioGuardado = usuarioRepository.save(usuario);
-        usuarioGuardado = usuarioRepository.findById(usuarioGuardado.getId()).orElse(usuarioGuardado);
-        
-        return UsuarioMapper.toDto(usuarioGuardado);
     }
 
     @Override

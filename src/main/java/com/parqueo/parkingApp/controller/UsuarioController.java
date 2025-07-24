@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -66,7 +67,7 @@ public class UsuarioController {
             
             if (!rol.equals("ESTUDIANTE") && !rol.equals("DOCENTE") && !rol.equals("PROVEEDOR_SERVICIO")) {
                 System.out.println("Rol no permitido: " + rol);
-                return ResponseEntity.badRequest().body("Solo se permiten registros para ESTUDIANTE, DOCENTE y PROVEEDOR_SERVICIO");
+                return ResponseEntity.badRequest().body(Map.of("message", "Solo se permiten registros para ESTUDIANTE, DOCENTE y PROVEEDOR_SERVICIO"));
             }
             
             System.out.println("Creando usuario...");
@@ -76,11 +77,13 @@ public class UsuarioController {
         } catch (RuntimeException e) {
             System.out.println("RuntimeException: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.badRequest().body(e.getMessage());
+            String errorMessage = e.getMessage() != null && !e.getMessage().isEmpty() ? e.getMessage() : "Error desconocido en el servidor (RuntimeException).";
+            return ResponseEntity.badRequest().body(Map.of("message", errorMessage));
         } catch (Exception e) {
             System.out.println("Exception: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor");
+            String errorMessage = e.getMessage() != null && !e.getMessage().isEmpty() ? e.getMessage() : "Error interno del servidor (Exception).";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", errorMessage));
         }
     }
 
