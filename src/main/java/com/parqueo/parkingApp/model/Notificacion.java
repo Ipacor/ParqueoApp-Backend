@@ -24,7 +24,7 @@ public class Notificacion {
     private Long id;
 
     @NotNull(message = "El usuario es obligatorio")
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "usuario_id", nullable = false)
     @ToString.Exclude
     private Usuario usuario;

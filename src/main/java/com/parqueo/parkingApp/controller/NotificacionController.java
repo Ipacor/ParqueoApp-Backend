@@ -31,7 +31,10 @@ public class NotificacionController {
             System.out.println("=== SOLICITUD DE NOTIFICACIONES PARA USUARIO " + usuarioId + " ===");
             List<Notificacion> notificaciones = service.obtenerNotificacionesUsuario(usuarioId);
             System.out.println("Notificaciones encontradas: " + notificaciones.size());
-            List<NotificacionDto> dtos = notificaciones.stream().map(NotificacionMapper::toDto).toList();
+            List<NotificacionDto> dtos = notificaciones.stream()
+                    .map(NotificacionMapper::toDto)
+                    .filter(dto -> dto != null) // Filtrar DTOs nulos
+                    .toList();
             System.out.println("DTOs creados: " + dtos.size());
             return ResponseEntity.ok(dtos);
         } catch (Exception e) {

@@ -7,6 +7,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import com.parqueo.parkingApp.model.Notificacion;
 
 @Entity
 @Table(name = "usuarios", indexes = {
@@ -74,6 +75,10 @@ public class Usuario {
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @ToString.Exclude
     private Set<Sancion> sanciones = new HashSet<>();
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @ToString.Exclude
+    private Set<Notificacion> notificaciones = new HashSet<>();
 
     // Constructor sin relaciones
     public Usuario(String username, String password, String nombreCompleto, String email, Rol rol) {

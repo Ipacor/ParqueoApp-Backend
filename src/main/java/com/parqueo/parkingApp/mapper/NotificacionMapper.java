@@ -10,13 +10,20 @@ public class NotificacionMapper {
         if (notificacion == null) {
             return null;
         }
-        NotificacionDto dto = new NotificacionDto();
-        dto.setId(notificacion.getId());
-        dto.setTitulo(notificacion.getTitulo());
-        dto.setMensaje(notificacion.getMensaje());
-        dto.setTipo(notificacion.getTipo() != null ? notificacion.getTipo().name() : null);
-        dto.setLeida(notificacion.getLeida());
-        dto.setFechaCreacion(notificacion.getFechaCreacion());
-        return dto;
+        
+        try {
+            NotificacionDto dto = new NotificacionDto();
+            dto.setId(notificacion.getId());
+            dto.setTitulo(notificacion.getTitulo());
+            dto.setMensaje(notificacion.getMensaje());
+            dto.setTipo(notificacion.getTipo() != null ? notificacion.getTipo().name() : null);
+            dto.setLeida(notificacion.getLeida());
+            dto.setFechaCreacion(notificacion.getFechaCreacion());
+            return dto;
+        } catch (Exception e) {
+            System.err.println("Error al mapear notificación: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
     }
 } 
