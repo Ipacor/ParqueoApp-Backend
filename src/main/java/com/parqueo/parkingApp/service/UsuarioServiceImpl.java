@@ -71,8 +71,10 @@ public class UsuarioServiceImpl implements UsuarioService {
                 throw new RuntimeException("Ya existe un usuario administrador en el sistema. Solo puede haber un administrador.");
             }
             
-            // Crear la entidad Usuario
+            // Crear la entidad Usuario (sin ID para nuevos registros)
             Usuario usuario = UsuarioMapper.toEntity(dto);
+            // Asegurar que el ID sea null para nuevos registros
+            usuario.setId(null);
             System.out.println("Entidad Usuario creada: " + usuario);
             
             // Encriptar la contraseña antes de guardar

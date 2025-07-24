@@ -59,7 +59,7 @@ public class UsuarioMapper {
         }
 
         return Usuario.builder()
-                .id(usuarioDto.getId())
+                .id(usuarioDto.getId() != null && usuarioDto.getId() > 0 ? usuarioDto.getId() : null)
                 .username(usuarioDto.getUsername())
                 .password(usuarioDto.getPassword())
                 .nombreCompleto(usuarioDto.getNombreCompleto())
