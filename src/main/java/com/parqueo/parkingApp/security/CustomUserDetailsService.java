@@ -87,7 +87,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .username(usuario.getUsername())
                 .password(usuario.getPassword())
                 .authorities(authorities)
-                .disabled(!usuario.getActivo())
+                .disabled(false) // Permitir login, el control de suspensión es personalizado
                 .build();
     }
 } 
