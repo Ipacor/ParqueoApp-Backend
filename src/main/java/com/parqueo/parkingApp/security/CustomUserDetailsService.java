@@ -4,6 +4,7 @@ import com.parqueo.parkingApp.model.Usuario;
 import com.parqueo.parkingApp.repository.UsuarioRepository;
 import com.parqueo.parkingApp.repository.SancionRepository;
 import com.parqueo.parkingApp.model.Sancion;
+import com.parqueo.parkingApp.repository.ReservaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -23,6 +24,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     private final UsuarioRepository usuarioRepository;
     private final SancionRepository sancionRepository;
+    private final ReservaRepository reservaRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -51,21 +53,25 @@ public class CustomUserDetailsService implements UserDetailsService {
         }
         
         if (suspendido) {
-            String mensaje = String.format("🚫 ACCESO DENEGADO: Tu cuenta está suspendida por '%s'. " +
-                    "No puedes acceder al sistema hasta que finalice la suspensión.", tipoSuspension);
-            
-            if (fechaFinSuspension != null) {
-                long diasRestantes = java.time.Duration.between(LocalDateTime.now(), fechaFinSuspension).toDays();
-                long horasRestantes = java.time.Duration.between(LocalDateTime.now(), fechaFinSuspension).toHours() % 24;
-                
-                if (diasRestantes > 0) {
-                    mensaje += String.format(" Tiempo restante: %d días y %d horas.", diasRestantes, horasRestantes);
-                } else {
-                    mensaje += String.format(" Tiempo restante: %d horas.", horasRestantes);
+            // Permitir login solo si tiene reservas activas o expiradas
+            boolean tieneReservasPendientes = reservaRepository.findByUsuarioId(usuario.getId()).stream()
+                .anyMatch(r -> r.getEstado() == com.parqueo.parkingApp.model.Reserva.EstadoReserva.ACTIVO ||
+                              r.getEstado() == com.parqueo.parkingApp.model.Reserva.EstadoReserva.EXPIRADO);
+            if (!tieneReservasPendientes) {
+                String mensaje = String.format("🚫 ACCESO DENEGADO: Tu cuenta está suspendida por '%s'. " +
+                        "No puedes acceder al sistema hasta que finalice la suspensión.", tipoSuspension);
+                if (fechaFinSuspension != null) {
+                    long diasRestantes = java.time.Duration.between(LocalDateTime.now(), fechaFinSuspension).toDays();
+                    long horasRestantes = java.time.Duration.between(LocalDateTime.now(), fechaFinSuspension).toHours() % 24;
+                    if (diasRestantes > 0) {
+                        mensaje += String.format(" Tiempo restante: %d días y %d horas.", diasRestantes, horasRestantes);
+                    } else {
+                        mensaje += String.format(" Tiempo restante: %d horas.", horasRestantes);
+                    }
                 }
+                throw new LockedException(mensaje);
             }
-            
-            throw new LockedException(mensaje);
+            // Si tiene reservas activas/expiradas, permitir login pero limitar permisos en el frontend
         }
 
         // Crear autoridades basadas en el rol y sus permisos
