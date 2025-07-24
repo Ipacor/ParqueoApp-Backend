@@ -28,8 +28,8 @@ public class SecurityConfig {
             .authorizeHttpRequests()
                 // Endpoints públicos para pruebas
                 .requestMatchers("/", "/health", "/api/test").permitAll()
-                // Permitir acceso público al login
-                .requestMatchers("/api/usuarios/login").permitAll()
+                // Permitir acceso público al login y registro
+                .requestMatchers("/api/usuarios/login", "/api/usuarios/registro").permitAll()
                 // Vehículos
                 .requestMatchers("/api/vehiculos/**").hasAnyAuthority("VEHICULO_LEER", "VEHICULO_CREAR", "VEHICULO_EDITAR", "VEHICULO_ELIMINAR")
                 // Reglas de Estacionamiento
