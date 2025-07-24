@@ -34,7 +34,16 @@ public class NotificacionServiceImpl implements NotificacionService {
 
     @Override
     public List<Notificacion> obtenerNotificacionesUsuario(Long usuarioId) {
-        return notificacionRepository.findByUsuarioIdOrderByFechaCreacionDesc(usuarioId);
+        System.out.println("=== SERVICIO: OBTENIENDO NOTIFICACIONES PARA USUARIO " + usuarioId + " ===");
+        try {
+            List<Notificacion> notificaciones = notificacionRepository.findByUsuarioIdOrderByFechaCreacionDesc(usuarioId);
+            System.out.println("Notificaciones encontradas en repositorio: " + notificaciones.size());
+            return notificaciones;
+        } catch (Exception e) {
+            System.err.println("Error en servicio al obtener notificaciones para usuario " + usuarioId + ": " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @Override

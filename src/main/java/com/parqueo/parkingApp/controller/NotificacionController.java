@@ -28,11 +28,17 @@ public class NotificacionController {
     @PreAuthorize("hasAuthority('NOTIFICACION_LEER')")
     public ResponseEntity<List<NotificacionDto>> obtenerNotificacionesUsuario(@PathVariable Long usuarioId) {
         try {
+            System.out.println("=== SOLICITUD DE NOTIFICACIONES PARA USUARIO " + usuarioId + " ===");
             List<Notificacion> notificaciones = service.obtenerNotificacionesUsuario(usuarioId);
+            System.out.println("Notificaciones encontradas: " + notificaciones.size());
             List<NotificacionDto> dtos = notificaciones.stream().map(NotificacionMapper::toDto).toList();
+            System.out.println("DTOs creados: " + dtos.size());
             return ResponseEntity.ok(dtos);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            System.err.println("Error al obtener notificaciones para usuario " + usuarioId + ": " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(List.of()); // Retornar lista vacía en lugar de error
         }
     }
 
