@@ -52,6 +52,24 @@ public class UsuarioController {
         }
     }
 
+    @PostMapping("/registro")
+    public ResponseEntity<?> registroPublico(@Valid @RequestBody UsuarioDto usuarioDto) {
+        try {
+            // Validar que el rol sea uno de los permitidos para registro público
+            String rol = usuarioDto.getRolNombre() != null ? usuarioDto.getRolNombre() : "";
+            if (!rol.equals("ESTUDIANTE") && !rol.equals("DOCENTE") && !rol.equals("PROVEEDOR_SERVICIO")) {
+                return ResponseEntity.badRequest().body("Solo se permiten registros para ESTUDIANTE, DOCENTE y PROVEEDOR_SERVICIO");
+            }
+            
+            UsuarioDto creado = usuarioService.crear(usuarioDto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(creado);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor");
+        }
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         try {
