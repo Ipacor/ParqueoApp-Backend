@@ -57,6 +57,7 @@ public class Notificacion {
 
     public enum TipoNotificacion {
         SANCION,
+        SANCION_APLICADA,
         DESBLOQUEO,
         RESERVA_EXPIRADA,
         RESERVA_CREADA,

@@ -16,12 +16,20 @@ public class NotificacionMapper {
             dto.setId(notificacion.getId());
             dto.setTitulo(notificacion.getTitulo());
             dto.setMensaje(notificacion.getMensaje());
-            dto.setTipo(notificacion.getTipo() != null ? notificacion.getTipo().name() : null);
+            
+            // Manejo seguro del tipo de notificación
+            if (notificacion.getTipo() != null) {
+                dto.setTipo(notificacion.getTipo().name());
+            } else {
+                System.err.println("Tipo de notificación es null para ID: " + notificacion.getId());
+                dto.setTipo("DESCONOCIDO");
+            }
+            
             dto.setLeida(notificacion.getLeida());
             dto.setFechaCreacion(notificacion.getFechaCreacion());
             return dto;
         } catch (Exception e) {
-            System.err.println("Error al mapear notificación: " + e.getMessage());
+            System.err.println("Error al mapear notificación ID " + notificacion.getId() + ": " + e.getMessage());
             e.printStackTrace();
             return null;
         }
