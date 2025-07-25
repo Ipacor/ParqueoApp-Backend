@@ -111,6 +111,16 @@ public class ReservaServiceImpl implements ReservaService {
             .orElseThrow(() -> new EntityNotFoundException("Vehículo no encontrado"));
         EspacioDisponible espacio = espacioRepo.findById(dto.getEspacioId())
             .orElseThrow(() -> new EntityNotFoundException("Espacio no encontrado"));
+        
+        // Validar que el espacio no esté ya reservado
+        List<Reserva> reservasExistentes = reservaRepo.findByEstado(Reserva.EstadoReserva.RESERVADO);
+        boolean espacioOcupado = reservasExistentes.stream()
+            .anyMatch(r -> r.getEspacio().getId().equals(espacio.getId()));
+        
+        if (espacioOcupado) {
+            throw new RuntimeException("El espacio ya está reservado");
+        }
+        
         nueva.setUsuario(usuario);
         nueva.setVehiculo(vehiculo);
         nueva.setEspacio(espacio);
@@ -506,12 +516,12 @@ public class ReservaServiceImpl implements ReservaService {
                 continue; // Ya se procesó en la primera lógica
             }
             
-            boolean debeLiberar = false;
+            boolean debeExpirar = false;
             String motivo = "";
             
             // Verificar si el QR ha expirado
             if (escaneo.getFechaExpiracion() != null && escaneo.getFechaExpiracion().isBefore(ahora)) {
-                debeLiberar = true;
+                debeExpirar = true;
                 motivo = "QR expirado";
             }
             
@@ -519,17 +529,14 @@ public class ReservaServiceImpl implements ReservaService {
             LocalDateTime tiempoReferencia = reserva.getFechaHoraInicio();
             
             if (tiempoReferencia != null && tiempoReferencia.plusMinutes(30).isBefore(ahora)) {
-                debeLiberar = true;
+                debeExpirar = true;
                 motivo = "Sin escaneo por 30 minutos";
             }
             
-            if (debeLiberar) {
-                // Liberar espacio
+            if (debeExpirar) {
+                // NO liberar el espacio automáticamente, solo cambiar estado de reserva
+                // El espacio sigue OCUPADO si el vehículo no ha salido
                 EspacioDisponible espacio = reserva.getEspacio();
-                if (espacio != null) {
-                    espacio.setEstado(EspacioDisponible.EstadoEspacio.DISPONIBLE);
-                    espacioRepo.save(espacio);
-                }
                 
                 // Cambiar estado de la reserva a EXPIRADO
                 reserva.setEstado(Reserva.EstadoReserva.EXPIRADO);
@@ -546,7 +553,7 @@ public class ReservaServiceImpl implements ReservaService {
                 
                 // Crear notificación de reserva expirada
                 String tituloNotificacion = "Reserva Expirada";
-                String mensajeNotificacion = String.format("Tu reserva #%d ha expirado por: %s. El espacio %s ya no está reservado para ti.", 
+                String mensajeNotificacion = String.format("Tu reserva #%d ha expirado por: %s. El espacio %s sigue ocupado hasta que registres tu salida.", 
                         reserva.getId(), 
                         motivo,
                         espacio.getNumeroEspacio());
@@ -555,7 +562,7 @@ public class ReservaServiceImpl implements ReservaService {
                 
                 // Log para debugging
                 System.out.println("Reserva " + reserva.getId() + " expirada por: " + motivo);
-                System.out.println("Espacio " + espacio.getId() + " liberado - Estado: " + espacio.getEstado());
+                System.out.println("Espacio " + espacio.getId() + " sigue ocupado - Estado: " + espacio.getEstado());
                 System.out.println("Fecha actual: " + ahora);
             }
         }
@@ -571,12 +578,9 @@ public class ReservaServiceImpl implements ReservaService {
             throw new IllegalStateException("La reserva no está en estado RESERVADO. Estado actual: " + reserva.getEstado());
         }
         
-        // Liberar espacio
+        // NO liberar el espacio automáticamente, solo cambiar estado de reserva
+        // El espacio sigue OCUPADO si el vehículo no ha salido
         EspacioDisponible espacio = reserva.getEspacio();
-        if (espacio != null) {
-            espacio.setEstado(EspacioDisponible.EstadoEspacio.DISPONIBLE);
-            espacioRepo.save(espacio);
-        }
         
         // Cambiar estado de la reserva a EXPIRADO
         reserva.setEstado(Reserva.EstadoReserva.EXPIRADO);
@@ -593,14 +597,14 @@ public class ReservaServiceImpl implements ReservaService {
         
         // Crear notificación de reserva expirada manualmente
         String tituloNotificacion = "Reserva Expirada";
-        String mensajeNotificacion = String.format("Tu reserva #%d ha sido expirada manualmente por un administrador. El espacio %s ya no está reservado para ti.", 
+        String mensajeNotificacion = String.format("Tu reserva #%d ha sido expirada manualmente por un administrador. El espacio %s sigue ocupado hasta que registres tu salida.", 
                 reservaId, 
                 espacio.getNumeroEspacio());
         
         notificacionService.crearNotificacion(reserva.getUsuario(), tituloNotificacion, mensajeNotificacion, Notificacion.TipoNotificacion.RESERVA_EXPIRADA);
         
         System.out.println("Reserva " + reservaId + " expirada manualmente");
-        System.out.println("Espacio " + espacio.getId() + " liberado - Estado: " + espacio.getEstado());
+        System.out.println("Espacio " + espacio.getId() + " sigue ocupado - Estado: " + espacio.getEstado());
     }
 
     private void validarDatosReserva(ReservaDto dto) {
@@ -652,6 +656,8 @@ public class ReservaServiceImpl implements ReservaService {
         
         for (Reserva reserva : reservasActivas) {
             if (reserva.getFechaHoraFin() != null && reserva.getFechaHoraFin().isBefore(ahora)) {
+                // NO liberar el espacio automáticamente, solo cambiar estado de reserva
+                // El espacio sigue OCUPADO si el vehículo no ha salido
                 reserva.setEstado(Reserva.EstadoReserva.EXPIRADO);
                 reservaRepo.save(reserva);
                 
@@ -660,7 +666,7 @@ public class ReservaServiceImpl implements ReservaService {
                     reserva.getUsuario(),
                     "Reserva Expirada",
                     "Tu reserva #" + reserva.getId() + " ha expirado automáticamente. El espacio " + 
-                    reserva.getEspacio().getNumeroEspacio() + " ya no está reservado para ti.",
+                    reserva.getEspacio().getNumeroEspacio() + " sigue ocupado hasta que registres tu salida.",
                     com.parqueo.parkingApp.model.Notificacion.TipoNotificacion.RESERVA_EXPIRADA
                 );
             }
@@ -726,14 +732,14 @@ public class ReservaServiceImpl implements ReservaService {
             
             // Recordatorio 20 minutos antes de expirar (NUEVO - para sanciones)
             if (fechaFin != null && fechaFin.isAfter(ahora) && fechaFin.isBefore(en20Minutos)) {
-                String mensajeSancion = "⚠️ ATENCIÓN: Tu reserva #" + reserva.getId() + " expira en menos de 20 minutos. " +
+                String mensajeSancion = "⚠ ATENCIÓN: Tu reserva #" + reserva.getId() + " expira en menos de 20 minutos. " +
                     "Si no registras tu salida a tiempo, se aplicará una sanción automática. " +
                     "Espacio: " + reserva.getEspacio().getNumeroEspacio() + 
                     ", Expira: " + fechaFin.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
                 
                 notificacionService.crearNotificacion(
                     reserva.getUsuario(),
-                    "🚨 Advertencia: Sanción Inminente",
+                    "   Advertencia: Sanción Inminente",
                     mensajeSancion,
                     com.parqueo.parkingApp.model.Notificacion.TipoNotificacion.RECORDATORIO_EXPIRACION
                 );
@@ -765,4 +771,3 @@ public class ReservaServiceImpl implements ReservaService {
         }
     }
 }
-
